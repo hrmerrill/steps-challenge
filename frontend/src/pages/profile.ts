@@ -5,6 +5,7 @@
 import { getCurrentUser, isAuthenticated } from "../auth";
 import { navigate } from "../router";
 import { apiFetch } from "../api";
+import { calculateTier, renderMilesClubBadge } from "../components/miles-club";
 
 export async function renderProfile(container: HTMLElement): Promise<void> {
   if (!isAuthenticated()) {
@@ -25,7 +26,7 @@ export async function renderProfile(container: HTMLElement): Promise<void> {
           <strong>Email:</strong> ${user?.email ?? "Unknown"}
         </div>
         <div style="margin-bottom: var(--space-lg);">
-          <strong>Step Entry:</strong> <span style="color: var(--color-text-muted);">Manual</span>
+          <strong>Tier:</strong> <span id="profile-tier" style="color: var(--color-text-muted);">—</span>
         </div>
         <div id="profile-stats"></div>
       </div>
@@ -39,6 +40,10 @@ export async function renderProfile(container: HTMLElement): Promise<void> {
       days_logged: number;
       average_daily: number;
     }>("/steps/summary");
+
+    const tier = calculateTier(summary.average_daily);
+    const tierEl = document.getElementById("profile-tier")!;
+    tierEl.innerHTML = `${renderMilesClubBadge(tier)} (${summary.average_daily.toLocaleString()} steps/day)`;
 
     document.getElementById("profile-stats")!.innerHTML = `
       <h3 style="margin-bottom: var(--space-sm);">All-Time Stats</h3>
