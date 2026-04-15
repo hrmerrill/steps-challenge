@@ -1,4 +1,28 @@
-# Byte-compiled / optimized / DLL files
+# === Frontend ===
+node_modules/
+dist/
+*.local
+
+# === Backend venv ===
+backend/.venv/
+
+# === Environment files ===
+.env
+.env.local
+.env.*.local
+
+# === IDE ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# === OS ===
+.DS_Store
+Thumbs.db
+
+# === Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
 *$py.class
