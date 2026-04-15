@@ -25,11 +25,12 @@ def upgrade() -> None:
     dialect = bind.dialect.name
 
     if dialect == "postgresql":
-        # Add new enum values
-        op.execute("ALTER TYPE milesclubtier ADD VALUE IF NOT EXISTS 'HIGH'")
-        op.execute("ALTER TYPE milesclubtier ADD VALUE IF NOT EXISTS 'MID'")
-        op.execute("ALTER TYPE milesclubtier ADD VALUE IF NOT EXISTS 'LOW'")
-        # Remap existing data
+        # Convert to text first — avoids the "new enum values must be
+        # committed before they can be used" transaction restriction.
+        op.execute(
+            "ALTER TABLE challenge_participants "
+            "ALTER COLUMN miles_club_tier TYPE VARCHAR USING miles_club_tier::text"
+        )
         op.execute(
             "UPDATE challenge_participants SET miles_club_tier = 'HIGH' WHERE miles_club_tier = 'GOLD'"
         )
@@ -38,6 +39,13 @@ def upgrade() -> None:
         )
         op.execute(
             "UPDATE challenge_participants SET miles_club_tier = 'LOW' WHERE miles_club_tier = 'BRONZE'"
+        )
+        # Recreate enum with new values and convert column back
+        op.execute("DROP TYPE IF EXISTS milesclubtier")
+        op.execute("CREATE TYPE milesclubtier AS ENUM ('HIGH', 'MID', 'LOW', 'NONE')")
+        op.execute(
+            "ALTER TABLE challenge_participants "
+            "ALTER COLUMN miles_club_tier TYPE milesclubtier USING miles_club_tier::milesclubtier"
         )
     else:
         # SQLite: simple string update
@@ -57,16 +65,32 @@ def downgrade() -> None:
     dialect = bind.dialect.name
 
     if dialect == "postgresql":
-        op.execute("ALTER TYPE milesclubtier ADD VALUE IF NOT EXISTS 'GOLD'")
-        op.execute("ALTER TYPE milesclubtier ADD VALUE IF NOT EXISTS 'SILVER'")
-        op.execute("ALTER TYPE milesclubtier ADD VALUE IF NOT EXISTS 'BRONZE'")
-
-    op.execute(
-        "UPDATE challenge_participants SET miles_club_tier = 'GOLD' WHERE miles_club_tier = 'HIGH'"
-    )
-    op.execute(
-        "UPDATE challenge_participants SET miles_club_tier = 'SILVER' WHERE miles_club_tier = 'MID'"
-    )
-    op.execute(
-        "UPDATE challenge_participants SET miles_club_tier = 'BRONZE' WHERE miles_club_tier = 'LOW'"
-    )
+        op.execute(
+            "ALTER TABLE challenge_participants "
+            "ALTER COLUMN miles_club_tier TYPE VARCHAR USING miles_club_tier::text"
+        )
+        op.execute(
+            "UPDATE challenge_participants SET miles_club_tier = 'GOLD' WHERE miles_club_tier = 'HIGH'"
+        )
+        op.execute(
+            "UPDATE challenge_participants SET miles_club_tier = 'SILVER' WHERE miles_club_tier = 'MID'"
+        )
+        op.execute(
+            "UPDATE challenge_participants SET miles_club_tier = 'BRONZE' WHERE miles_club_tier = 'LOW'"
+        )
+        op.execute("DROP TYPE IF EXISTS milesclubtier")
+        op.execute("CREATE TYPE milesclubtier AS ENUM ('GOLD', 'SILVER', 'BRONZE', 'NONE')")
+        op.execute(
+            "ALTER TABLE challenge_participants "
+            "ALTER COLUMN miles_club_tier TYPE milesclubtier USING miles_club_tier::milesclubtier"
+        )
+    else:
+        op.execute(
+            "UPDATE challenge_participants SET miles_club_tier = 'GOLD' WHERE miles_club_tier = 'HIGH'"
+        )
+        op.execute(
+            "UPDATE challenge_participants SET miles_club_tier = 'SILVER' WHERE miles_club_tier = 'MID'"
+        )
+        op.execute(
+            "UPDATE challenge_participants SET miles_club_tier = 'BRONZE' WHERE miles_club_tier = 'LOW'"
+        )
