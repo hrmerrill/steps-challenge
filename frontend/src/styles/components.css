@@ -13,12 +13,48 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  flex-wrap: wrap;
 }
 
 .nav-brand {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--color-primary);
+}
+
+/* --- Hamburger Button --- */
+.nav-hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  padding: var(--space-sm);
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.nav-hamburger span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--color-text);
+  border-radius: 2px;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.nav-hamburger--open span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.nav-hamburger--open span:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-hamburger--open span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 .nav-links {
@@ -410,4 +446,69 @@
 .how-it-works-tiers .badge {
   min-width: 80px;
   justify-content: center;
+}
+
+/* =============================================
+   Responsive — Mobile-first overrides
+   ============================================= */
+
+@media (max-width: 640px) {
+  /* Show hamburger, collapse nav */
+  .nav-hamburger {
+    display: flex;
+  }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    width: 100%;
+    gap: var(--space-xs);
+    padding-top: var(--space-md);
+  }
+
+  .nav-links--open {
+    display: flex;
+  }
+
+  .nav-links li {
+    width: 100%;
+  }
+
+  .nav-links a:not(.btn),
+  .nav-links .btn,
+  .nav-links .theme-toggle {
+    display: block;
+    width: 100%;
+    text-align: center;
+    padding: var(--space-sm) var(--space-md);
+    min-height: 44px;
+    line-height: 1.75;
+  }
+
+  /* Touch-friendly tap targets */
+  .btn {
+    min-height: 44px;
+    padding: var(--space-sm) var(--space-md);
+  }
+
+  .btn-sm {
+    min-height: 44px;
+    padding: var(--space-sm) var(--space-md);
+    font-size: 0.8125rem;
+  }
+
+  /* Stack leaderboard rows better */
+  .leaderboard-row {
+    flex-wrap: wrap;
+  }
+
+  /* Widen step history rows */
+  .step-history-date {
+    min-width: auto;
+  }
+
+  .challenge-selector select {
+    min-width: 0;
+    width: 100%;
+  }
 }

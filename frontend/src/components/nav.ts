@@ -12,7 +12,10 @@ export function renderNav(container: HTMLElement): void {
   container.innerHTML = `
     <nav class="nav">
       <a href="#/" class="nav-brand">Carbon Steps Challenge</a>
-      <ul class="nav-links">
+      <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+      <ul class="nav-links" id="nav-links">
         ${authed ? `
           <li><a href="#/">Dashboard</a></li>
           <li><a href="#/log">Log Steps</a></li>
@@ -34,6 +37,24 @@ export function renderNav(container: HTMLElement): void {
       navigate("/login");
     });
   }
+
+  // Hamburger toggle
+  const hamburger = container.querySelector("#nav-hamburger")!;
+  const navLinks = container.querySelector("#nav-links")!;
+  hamburger.addEventListener("click", () => {
+    const expanded = navLinks.classList.toggle("nav-links--open");
+    hamburger.setAttribute("aria-expanded", String(expanded));
+    hamburger.classList.toggle("nav-hamburger--open", expanded);
+  });
+
+  // Close menu when a link is clicked (mobile)
+  navLinks.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", () => {
+      navLinks.classList.remove("nav-links--open");
+      hamburger.classList.remove("nav-hamburger--open");
+      hamburger.setAttribute("aria-expanded", "false");
+    });
+  });
 
   // Theme toggle
   const themeBtn = container.querySelector("#theme-toggle-btn")!;
