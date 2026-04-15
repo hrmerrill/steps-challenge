@@ -36,9 +36,13 @@ interface UserChallengeStats {
   miles_club_tier: string;
 }
 
-interface StepSummary {
+interface OverallUserStats {
+  user_id: number;
+  display_name: string;
   total_steps: number;
   total_miles: number;
+  rank: number;
+  total_users: number;
   days_logged: number;
   average_daily: number;
 }
@@ -123,27 +127,28 @@ function renderStatsCard(container: HTMLElement, stats: UserChallengeStats): voi
   `;
 }
 
-function renderOverallStatsCard(container: HTMLElement, summary: StepSummary): void {
+function renderOverallStatsCard(container: HTMLElement, stats: OverallUserStats): void {
   container.innerHTML = `
     <div class="card">
       <div class="card-header">
         <h3 class="card-title">📊 All-Time Stats</h3>
+        <span class="card-subtitle">Rank ${stats.rank} of ${stats.total_users}</span>
       </div>
       <div class="stats-grid">
         <div class="stat-item">
-          <div class="stat-value">${formatNumber(summary.total_steps)}</div>
+          <div class="stat-value">${formatNumber(stats.total_steps)}</div>
           <div class="stat-label">Total Steps</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">${summary.total_miles}</div>
+          <div class="stat-value">${stats.total_miles}</div>
           <div class="stat-label">Miles</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">${summary.days_logged}</div>
+          <div class="stat-value">${stats.days_logged}</div>
           <div class="stat-label">Days Logged</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">${formatNumber(summary.average_daily)}</div>
+          <div class="stat-value">${formatNumber(stats.average_daily)}</div>
           <div class="stat-label">Avg Daily</div>
         </div>
       </div>
@@ -297,6 +302,8 @@ async function renderOverallView(
   container: HTMLElement,
   challenges: Challenge[],
 ): Promise<void> {
+  const user = getCurrentUser();
+
   const options = challenges
     .map((c) => {
       const tag = getChallengeStatus(c) === "active" ? " 🟢" : getChallengeStatus(c) === "upcoming" ? " ⏳" : "";
@@ -315,7 +322,13 @@ async function renderOverallView(
         </select>
       </div>
       <div id="stats-section" style="margin-bottom: var(--space-lg);"></div>
-      <div id="chart-section"></div>
+      <div class="card-grid--wide" style="display: grid; gap: var(--space-lg);">
+        <div id="trail-section"></div>
+        <div class="card-grid">
+          <div id="leaderboard-section"></div>
+          <div id="chart-section"></div>
+        </div>
+      </div>
     </div>
   `;
 
@@ -330,23 +343,33 @@ async function renderOverallView(
     }
   });
 
-  if (!isAuthenticated()) {
+  // Leaderboard + trail in parallel (always shown, no auth needed)
+  await Promise.all([
+    renderLeaderboard(
+      document.getElementById("leaderboard-section")!,
+      "overall",
+      user?.id,
+    ),
+    renderTrailMap(document.getElementById("trail-section")!, "overall"),
+  ]);
+
+  // Auth-gated: personal stats + step chart
+  if (isAuthenticated()) {
+    try {
+      const [overallStats, allSteps] = await Promise.all([
+        apiFetch<OverallUserStats>("/leaderboard/overall/my-stats"),
+        apiFetch<DayData[]>("/steps/"),
+      ]);
+
+      renderOverallStatsCard(document.getElementById("stats-section")!, overallStats);
+      renderStepChart(document.getElementById("chart-section")!, allSteps, "All-Time Steps");
+    } catch {
+      document.getElementById("stats-section")!.innerHTML =
+        '<div class="card"><p>Failed to load overall stats.</p></div>';
+    }
+  } else {
     document.getElementById("stats-section")!.innerHTML =
       '<div class="card"><p>Log in to see your overall progress.</p></div>';
-    return;
-  }
-
-  try {
-    const [summary, allSteps] = await Promise.all([
-      apiFetch<StepSummary>("/steps/summary"),
-      apiFetch<DayData[]>("/steps/"),
-    ]);
-
-    renderOverallStatsCard(document.getElementById("stats-section")!, summary);
-    renderStepChart(document.getElementById("chart-section")!, allSteps, "All-Time Steps");
-  } catch {
-    document.getElementById("stats-section")!.innerHTML =
-      '<div class="card"><p>Failed to load overall stats.</p></div>';
   }
 }
 

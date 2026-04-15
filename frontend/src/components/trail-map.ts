@@ -55,12 +55,13 @@ export function interpolatePosition(
 /** Render the trail map card. Requires Leaflet loaded globally. */
 export async function renderTrailMap(
   container: HTMLElement,
-  challengeId: number,
+  challengeId: number | "overall",
 ): Promise<void> {
   try {
-    const progress = await apiFetch<TrailProgress>(
-      `/leaderboard/${challengeId}/trail`,
-    );
+    const url = challengeId === "overall"
+      ? "/leaderboard/overall/trail"
+      : `/leaderboard/${challengeId}/trail`;
+    const progress = await apiFetch<TrailProgress>(url);
 
     container.innerHTML = `
       <div class="card">

@@ -5,14 +5,113 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.challenge import Challenge, ChallengeParticipant
+from app.models.challenge import Challenge, ChallengeParticipant, MilesClubTier
 from app.models.steps import DailySteps
 from app.models.user import User
-from app.schemas.challenge import LeaderboardEntry, TrailProgress
+from app.schemas.challenge import LeaderboardEntry, OverallUserStats, TrailProgress
 from app.services.auth import get_current_user
 from app.services.trail import calculate_trail_progress, steps_to_miles
 
 router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
+
+
+# ── Overall (all-time) endpoints — must be before /{challenge_id} routes ──
+
+
+@router.get("/overall", response_model=list[LeaderboardEntry])
+def get_overall_leaderboard(db: Session = Depends(get_db)):
+    """Get all-time leaderboard ranked by total steps across all dates."""
+    results = (
+        db.query(
+            User.id,
+            User.display_name,
+            func.coalesce(func.sum(DailySteps.step_count), 0).label("total_steps"),
+        )
+        .outerjoin(DailySteps, DailySteps.user_id == User.id)
+        .group_by(User.id, User.display_name)
+        .having(func.coalesce(func.sum(DailySteps.step_count), 0) > 0)
+        .order_by(func.coalesce(func.sum(DailySteps.step_count), 0).desc())
+        .all()
+    )
+
+    return [
+        LeaderboardEntry(
+            rank=i + 1,
+            user_id=row[0],
+            display_name=row[1],
+            miles_club_tier=MilesClubTier.NONE,
+            total_steps=row[2],
+            total_miles=steps_to_miles(row[2]),
+        )
+        for i, row in enumerate(results)
+    ]
+
+
+@router.get("/overall/trail", response_model=TrailProgress)
+def get_overall_trail_progress(
+    trail: str = Query("appalachian", description="Trail key"),
+    db: Session = Depends(get_db),
+):
+    """Get trail progress using all-time steps from all users."""
+    total_steps = (
+        db.query(func.coalesce(func.sum(DailySteps.step_count), 0)).scalar()
+    )
+    return calculate_trail_progress(total_steps, trail)
+
+
+@router.get("/overall/my-stats", response_model=OverallUserStats)
+def get_overall_my_stats(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get the authenticated user's all-time stats with rank."""
+    user_agg = (
+        db.query(
+            func.coalesce(func.sum(DailySteps.step_count), 0).label("total"),
+            func.count(DailySteps.id).label("days"),
+        )
+        .filter(DailySteps.user_id == user.id)
+        .one()
+    )
+    total_steps = int(user_agg.total)
+    days_logged = int(user_agg.days)
+
+    # Rank: count users with more total steps
+    users_above = (
+        db.query(func.count())
+        .select_from(User)
+        .outerjoin(DailySteps, DailySteps.user_id == User.id)
+        .group_by(User.id)
+        .having(func.coalesce(func.sum(DailySteps.step_count), 0) > total_steps)
+        .subquery()
+    )
+    rank = db.query(func.count()).select_from(users_above).scalar() + 1
+
+    # Total users who have logged at least one step
+    total_users = (
+        db.query(func.count(func.distinct(DailySteps.user_id))).scalar()
+    )
+    # Ensure current user is counted even with 0 steps
+    if total_steps == 0 and total_users > 0:
+        total_users += 1
+    elif total_users == 0:
+        total_users = 1
+
+    avg_daily = round(total_steps / days_logged, 1) if days_logged > 0 else 0.0
+
+    return OverallUserStats(
+        user_id=user.id,
+        display_name=user.display_name,
+        total_steps=total_steps,
+        total_miles=steps_to_miles(total_steps),
+        rank=rank,
+        total_users=total_users,
+        days_logged=days_logged,
+        average_daily=avg_daily,
+    )
+
+
+# ── Per-challenge endpoints ──
 
 
 @router.get("/{challenge_id}", response_model=list[LeaderboardEntry])

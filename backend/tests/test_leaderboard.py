@@ -108,6 +108,87 @@ class TestTrailEndpoint:
         assert body["progress_percent"] > 0
 
 
+class TestOverallLeaderboard:
+    def test_overall_leaderboard_empty(self, client):
+        resp = client.get("/leaderboard/overall")
+        assert resp.status_code == 200
+        assert resp.json() == []
+
+    def test_overall_leaderboard_ranked(self, client):
+        h1 = _register_and_get_header(client, "oa@test.com", "Alice")
+        h2 = _register_and_get_header(client, "ob@test.com", "Bob")
+        client.post("/steps/", json={"date": "2026-04-10", "step_count": 5000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-04-11", "step_count": 3000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-04-10", "step_count": 20000}, headers=h2)
+
+        resp = client.get("/leaderboard/overall")
+        assert resp.status_code == 200
+        board = resp.json()
+        assert len(board) == 2
+        assert board[0]["display_name"] == "Bob"
+        assert board[0]["total_steps"] == 20000
+        assert board[0]["rank"] == 1
+        assert board[1]["display_name"] == "Alice"
+        assert board[1]["total_steps"] == 8000
+        assert board[1]["rank"] == 2
+
+
+class TestOverallTrail:
+    def test_overall_trail_progress(self, client):
+        h = _register_and_get_header(client, "ot@test.com", "Trekker")
+        client.post("/steps/", json={"date": "2026-01-15", "step_count": 10000}, headers=h)
+        client.post("/steps/", json={"date": "2026-04-15", "step_count": 10000}, headers=h)
+
+        resp = client.get("/leaderboard/overall/trail")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total_group_steps"] == 20000
+        assert body["total_group_miles"] == 10.0
+        assert body["progress_percent"] > 0
+
+    def test_overall_trail_empty(self, client):
+        resp = client.get("/leaderboard/overall/trail")
+        assert resp.status_code == 200
+        assert resp.json()["total_group_steps"] == 0
+
+
+class TestOverallMyStats:
+    def test_overall_my_stats(self, client):
+        h = _register_and_get_header(client, "oms@test.com", "MyStat")
+        client.post("/steps/", json={"date": "2026-01-10", "step_count": 5000}, headers=h)
+        client.post("/steps/", json={"date": "2026-04-10", "step_count": 15000}, headers=h)
+
+        resp = client.get("/leaderboard/overall/my-stats", headers=h)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total_steps"] == 20000
+        assert body["total_miles"] == 10.0
+        assert body["days_logged"] == 2
+        assert body["average_daily"] == 10000.0
+        assert body["rank"] == 1
+        assert body["total_users"] >= 1
+
+    def test_overall_my_stats_no_steps(self, client):
+        h = _register_and_get_header(client, "omsn@test.com", "NoSteps")
+        resp = client.get("/leaderboard/overall/my-stats", headers=h)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total_steps"] == 0
+        assert body["days_logged"] == 0
+        assert body["rank"] == 1
+
+    def test_overall_my_stats_rank(self, client):
+        h1 = _register_and_get_header(client, "omr1@test.com", "Leader")
+        h2 = _register_and_get_header(client, "omr2@test.com", "Follower")
+        client.post("/steps/", json={"date": "2026-04-10", "step_count": 30000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-04-10", "step_count": 5000}, headers=h2)
+
+        resp = client.get("/leaderboard/overall/my-stats", headers=h2)
+        assert resp.status_code == 200
+        assert resp.json()["rank"] == 2
+        assert resp.json()["total_users"] == 2
+
+
 class TestMembership:
     def test_membership_not_joined(self, client):
         h = _register_and_get_header(client, "notin@test.com", "NotIn")

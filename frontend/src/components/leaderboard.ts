@@ -35,13 +35,14 @@ export function tierBadgeHtml(tier: string): string {
 /** Render the leaderboard card into a container. Highlights currentUserId if provided. */
 export async function renderLeaderboard(
   container: HTMLElement,
-  challengeId: number,
+  challengeId: number | "overall",
   currentUserId?: number,
 ): Promise<void> {
   try {
-    const entries = await apiFetch<LeaderboardEntry[]>(
-      `/leaderboard/${challengeId}`,
-    );
+    const url = challengeId === "overall"
+      ? "/leaderboard/overall"
+      : `/leaderboard/${challengeId}`;
+    const entries = await apiFetch<LeaderboardEntry[]>(url);
 
     if (entries.length === 0) {
       container.innerHTML = `

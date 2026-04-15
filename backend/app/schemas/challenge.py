@@ -29,7 +29,7 @@ class LeaderboardEntry(BaseModel):
     user_id: int
     display_name: str
     total_steps: int
-    miles_club_tier: MilesClubTier
+    miles_club_tier: MilesClubTier = MilesClubTier.NONE
     total_miles: float
 
 
@@ -61,3 +61,16 @@ class ChallengeMembership(BaseModel):
 
     joined: bool
     miles_club_tier: MilesClubTier | None = None
+
+
+class OverallUserStats(BaseModel):
+    """All-time stats for the authenticated user across all challenges."""
+
+    user_id: int
+    display_name: str
+    total_steps: int
+    total_miles: float
+    rank: int
+    total_users: int
+    days_logged: int
+    average_daily: float
