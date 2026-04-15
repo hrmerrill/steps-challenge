@@ -1,5 +1,6 @@
 /**
- * Landing / Dashboard page — join challenge, personal stats, leaderboard, trail map, step chart.
+ * Landing / Dashboard page — challenge selector, status banner, join, personal stats,
+ * leaderboard, trail map, step chart. Supports per-challenge and overall views.
  */
 
 import { renderLeaderboard } from "../components/leaderboard";
@@ -35,8 +36,50 @@ interface UserChallengeStats {
   miles_club_tier: string;
 }
 
+interface StepSummary {
+  total_steps: number;
+  total_miles: number;
+  days_logged: number;
+  average_daily: number;
+}
+
+type ChallengeStatus = "upcoming" | "active" | "ended";
+
 function formatNumber(n: number): string {
   return n.toLocaleString();
+}
+
+function getChallengeStatus(challenge: Challenge): ChallengeStatus {
+  const today = new Date().toISOString().split("T")[0];
+  if (challenge.start_date > today) return "upcoming";
+  if (challenge.end_date < today) return "ended";
+  return "active";
+}
+
+function daysUntil(dateStr: string): number {
+  const target = new Date(dateStr + "T00:00:00");
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return Math.ceil((target.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+function renderStatusBanner(challenge: Challenge): string {
+  const status = getChallengeStatus(challenge);
+  if (status === "upcoming") {
+    const days = daysUntil(challenge.start_date);
+    return `<div class="challenge-status challenge-status--upcoming">
+      ⏳ <strong>${challenge.name}</strong> starts in ${days} day${days === 1 ? "" : "s"} (${challenge.start_date})
+    </div>`;
+  }
+  if (status === "active") {
+    const daysLeft = daysUntil(challenge.end_date);
+    return `<div class="challenge-status challenge-status--active">
+      🟢 <strong>${challenge.name}</strong> is underway — ${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining
+    </div>`;
+  }
+  return `<div class="challenge-status challenge-status--ended">
+    ✅ <strong>${challenge.name}</strong> has ended (${challenge.start_date} – ${challenge.end_date})
+  </div>`;
 }
 
 function renderStatsCard(container: HTMLElement, stats: UserChallengeStats): void {
@@ -80,6 +123,34 @@ function renderStatsCard(container: HTMLElement, stats: UserChallengeStats): voi
   `;
 }
 
+function renderOverallStatsCard(container: HTMLElement, summary: StepSummary): void {
+  container.innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">📊 All-Time Stats</h3>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <div class="stat-value">${formatNumber(summary.total_steps)}</div>
+          <div class="stat-label">Total Steps</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${summary.total_miles}</div>
+          <div class="stat-label">Miles</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${summary.days_logged}</div>
+          <div class="stat-label">Days Logged</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">${formatNumber(summary.average_daily)}</div>
+          <div class="stat-label">Avg Daily</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 async function handleJoin(challengeId: number, container: HTMLElement): Promise<void> {
   const btn = container.querySelector<HTMLButtonElement>("#join-btn");
   if (btn) {
@@ -92,7 +163,6 @@ async function handleJoin(challengeId: number, container: HTMLElement): Promise<
       { method: "POST" },
     );
     if (result.joined) {
-      // Reload the page to show stats
       window.location.reload();
     }
   } catch (err) {
@@ -104,10 +174,34 @@ async function handleJoin(challengeId: number, container: HTMLElement): Promise<
   }
 }
 
-export async function renderLanding(container: HTMLElement): Promise<void> {
+async function renderChallengeView(
+  container: HTMLElement,
+  challenge: Challenge,
+  challenges: Challenge[],
+): Promise<void> {
+  const user = getCurrentUser();
+  const status = getChallengeStatus(challenge);
+
+  // Challenge selector
+  const options = challenges
+    .map((c) => {
+      const selected = c.id === challenge.id ? "selected" : "";
+      const tag = getChallengeStatus(c) === "active" ? " 🟢" : getChallengeStatus(c) === "upcoming" ? " ⏳" : "";
+      return `<option value="${c.id}" ${selected}>${c.name}${tag}</option>`;
+    })
+    .join("");
+
   container.innerHTML = `
     <div class="container" style="padding-top: var(--space-xl);">
-      <h1 style="margin-bottom: var(--space-lg);">Steps Challenge Dashboard</h1>
+      <h1 style="margin-bottom: var(--space-md);">Steps Challenge Dashboard</h1>
+      <div class="challenge-selector">
+        <label for="challenge-select">View:</label>
+        <select id="challenge-select">
+          ${options}
+          <option value="overall">Overall Progress</option>
+        </select>
+      </div>
+      <div id="status-section"></div>
       <div id="join-section"></div>
       <div id="stats-section" style="margin-bottom: var(--space-lg);"></div>
       <div class="card-grid--wide" style="display: grid; gap: var(--space-lg);">
@@ -120,73 +214,172 @@ export async function renderLanding(container: HTMLElement): Promise<void> {
     </div>
   `;
 
+  // Wire up selector
+  document.getElementById("challenge-select")!.addEventListener("change", (e) => {
+    const val = (e.target as HTMLSelectElement).value;
+    if (val === "overall") {
+      renderOverallView(container, challenges);
+    } else {
+      const selected = challenges.find((c) => c.id === parseInt(val, 10));
+      if (selected) renderChallengeView(container, selected, challenges);
+    }
+  });
+
+  // Status banner
+  document.getElementById("status-section")!.innerHTML = renderStatusBanner(challenge);
+
+  let membership: Membership | null = null;
+  let userStats: UserChallengeStats | null = null;
+
+  if (isAuthenticated() && user) {
+    try {
+      membership = await apiFetch<Membership>(`/challenges/${challenge.id}/membership`);
+    } catch {
+      membership = null;
+    }
+
+    if (membership?.joined) {
+      try {
+        userStats = await apiFetch<UserChallengeStats>(`/challenges/${challenge.id}/my-stats`);
+      } catch {
+        userStats = null;
+      }
+    }
+  }
+
+  // Join banner (only for active or upcoming challenges)
+  const joinSection = document.getElementById("join-section")!;
+  if (isAuthenticated() && membership && !membership.joined && status !== "ended") {
+    const actionText = status === "upcoming"
+      ? `<strong>${challenge.name}</strong> hasn't started yet — join now so you're ready!`
+      : `<strong>${challenge.name}</strong> is underway! Join the challenge to start tracking your steps.`;
+    joinSection.innerHTML = `
+      <div class="join-banner">
+        <p>🏃 ${actionText}</p>
+        <button class="btn btn-primary" id="join-btn">Join Challenge</button>
+      </div>
+    `;
+    document.getElementById("join-btn")!.addEventListener("click", () =>
+      handleJoin(challenge.id, container),
+    );
+  }
+
+  // Individual stats
+  const statsSection = document.getElementById("stats-section")!;
+  if (userStats) {
+    renderStatsCard(statsSection, userStats);
+  }
+
+  // Leaderboard + trail in parallel
+  await Promise.all([
+    renderLeaderboard(
+      document.getElementById("leaderboard-section")!,
+      challenge.id,
+      user?.id,
+    ),
+    renderTrailMap(document.getElementById("trail-section")!, challenge.id),
+  ]);
+
+  // User's own step chart
+  if (isAuthenticated() && membership?.joined) {
+    try {
+      const steps = await apiFetch<DayData[]>(
+        `/steps/?start_date=${challenge.start_date}&end_date=${challenge.end_date}`,
+      );
+      renderStepChart(document.getElementById("chart-section")!, steps, "Your Steps");
+    } catch {
+      // chart is optional — ignore
+    }
+  }
+}
+
+async function renderOverallView(
+  container: HTMLElement,
+  challenges: Challenge[],
+): Promise<void> {
+  const options = challenges
+    .map((c) => {
+      const tag = getChallengeStatus(c) === "active" ? " 🟢" : getChallengeStatus(c) === "upcoming" ? " ⏳" : "";
+      return `<option value="${c.id}">${c.name}${tag}</option>`;
+    })
+    .join("");
+
+  container.innerHTML = `
+    <div class="container" style="padding-top: var(--space-xl);">
+      <h1 style="margin-bottom: var(--space-md);">Steps Challenge Dashboard</h1>
+      <div class="challenge-selector">
+        <label for="challenge-select">View:</label>
+        <select id="challenge-select">
+          ${options}
+          <option value="overall" selected>Overall Progress</option>
+        </select>
+      </div>
+      <div id="stats-section" style="margin-bottom: var(--space-lg);"></div>
+      <div id="chart-section"></div>
+    </div>
+  `;
+
+  // Wire up selector
+  document.getElementById("challenge-select")!.addEventListener("change", (e) => {
+    const val = (e.target as HTMLSelectElement).value;
+    if (val === "overall") {
+      renderOverallView(container, challenges);
+    } else {
+      const selected = challenges.find((c) => c.id === parseInt(val, 10));
+      if (selected) renderChallengeView(container, selected, challenges);
+    }
+  });
+
+  if (!isAuthenticated()) {
+    document.getElementById("stats-section")!.innerHTML =
+      '<div class="card"><p>Log in to see your overall progress.</p></div>';
+    return;
+  }
+
+  try {
+    const [summary, allSteps] = await Promise.all([
+      apiFetch<StepSummary>("/steps/summary"),
+      apiFetch<DayData[]>("/steps/"),
+    ]);
+
+    renderOverallStatsCard(document.getElementById("stats-section")!, summary);
+    renderStepChart(document.getElementById("chart-section")!, allSteps, "All-Time Steps");
+  } catch {
+    document.getElementById("stats-section")!.innerHTML =
+      '<div class="card"><p>Failed to load overall stats.</p></div>';
+  }
+}
+
+export async function renderLanding(container: HTMLElement): Promise<void> {
+  container.innerHTML = `
+    <div class="container" style="padding-top: var(--space-xl);">
+      <h1 style="margin-bottom: var(--space-lg);">Steps Challenge Dashboard</h1>
+      <p>Loading…</p>
+    </div>
+  `;
+
   try {
     const challenges = await apiFetch<Challenge[]>("/challenges/");
-    const active = challenges.find((c) => c.is_active);
-    if (!active) {
-      document.getElementById("leaderboard-section")!.innerHTML =
-        '<div class="card"><p>No active challenge. Create one to get started!</p></div>';
+    if (challenges.length === 0) {
+      container.innerHTML = `
+        <div class="container" style="padding-top: var(--space-xl);">
+          <h1 style="margin-bottom: var(--space-lg);">Steps Challenge Dashboard</h1>
+          <div class="card"><p>No challenges yet. Create one to get started!</p></div>
+        </div>
+      `;
       return;
     }
 
-    const user = getCurrentUser();
-    let membership: Membership | null = null;
-    let userStats: UserChallengeStats | null = null;
+    // Pick the best default: active challenge, then upcoming, then most recent
+    const active = challenges.find((c) => getChallengeStatus(c) === "active");
+    const upcoming = challenges.find((c) => getChallengeStatus(c) === "upcoming");
+    const defaultChallenge = active ?? upcoming ?? challenges[0];
 
-    // Check membership and load stats if authenticated
-    if (isAuthenticated() && user) {
-      try {
-        membership = await apiFetch<Membership>(`/challenges/${active.id}/membership`);
-      } catch {
-        membership = null;
-      }
-
-      if (membership?.joined) {
-        try {
-          userStats = await apiFetch<UserChallengeStats>(`/challenges/${active.id}/my-stats`);
-        } catch {
-          userStats = null;
-        }
-      }
-    }
-
-    // Show join banner if authenticated but not joined
-    const joinSection = document.getElementById("join-section")!;
-    if (isAuthenticated() && membership && !membership.joined) {
-      joinSection.innerHTML = `
-        <div class="join-banner">
-          <p>🏃 <strong>${active.name}</strong> is underway! Join the challenge to start tracking your steps.</p>
-          <button class="btn btn-primary" id="join-btn">Join Challenge</button>
-        </div>
-      `;
-      const joinBtn = document.getElementById("join-btn")!;
-      joinBtn.addEventListener("click", () => handleJoin(active.id, container));
-    }
-
-    // Show individual stats if joined
-    const statsSection = document.getElementById("stats-section")!;
-    if (userStats) {
-      renderStatsCard(statsSection, userStats);
-    }
-
-    // Render components in parallel
-    await Promise.all([
-      renderLeaderboard(
-        document.getElementById("leaderboard-section")!,
-        active.id,
-        user?.id,
-      ),
-      renderTrailMap(document.getElementById("trail-section")!, active.id),
-    ]);
-
-    // Load user's own step chart if authenticated and joined
-    if (isAuthenticated() && membership?.joined) {
-      const steps = await apiFetch<DayData[]>(
-        `/steps/?start_date=${active.start_date}&end_date=${active.end_date}`,
-      );
-      renderStepChart(document.getElementById("chart-section")!, steps, "Your Steps");
-    }
+    await renderChallengeView(container, defaultChallenge, challenges);
   } catch {
     container.innerHTML += '<div class="card"><p>Failed to load dashboard.</p></div>';
   }
 }
+
+// Exported for testing
+export { getChallengeStatus, daysUntil };

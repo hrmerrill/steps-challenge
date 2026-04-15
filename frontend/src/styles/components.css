@@ -217,3 +217,100 @@
 .join-banner .btn {
   white-space: nowrap;
 }
+
+/* --- Step History --- */
+.step-history-row {
+  display: flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.step-history-row:last-child {
+  border-bottom: none;
+}
+
+.step-history-date {
+  min-width: 100px;
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+.step-history-count {
+  flex: 1;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+}
+
+.step-history-source {
+  font-size: 0.7rem;
+}
+
+.step-history-actions {
+  display: flex;
+  gap: var(--space-xs);
+}
+
+.btn-sm {
+  padding: 0.2rem var(--space-sm);
+  font-size: 0.75rem;
+}
+
+/* --- Challenge Status Banner --- */
+.challenge-status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  margin-bottom: var(--space-md);
+}
+
+.challenge-status--upcoming {
+  background: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.challenge-status--active {
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.challenge-status--ended {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+/* --- Challenge Selector --- */
+.challenge-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+}
+
+.challenge-selector label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.challenge-selector select {
+  padding: var(--space-sm) var(--space-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-family: inherit;
+  background: var(--color-surface);
+  cursor: pointer;
+  min-width: 200px;
+}
