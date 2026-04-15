@@ -12,7 +12,7 @@ def _register_and_get_header(client, email: str, name: str) -> dict:
 
 def _create_challenge(client, headers: dict) -> int:
     resp = client.post("/challenges/", json={
-        "name": "April 2026", "start_date": "2026-04-01", "end_date": "2026-04-30",
+        "name": "Carbon Miles Challenge - May", "start_date": "2026-05-01", "end_date": "2026-05-31",
     }, headers=headers)
     return resp.json()["id"]
 
@@ -21,15 +21,25 @@ class TestChallenges:
     def test_create_challenge(self, client):
         h = _register_and_get_header(client, "ch@test.com", "Creator")
         resp = client.post("/challenges/", json={
-            "name": "April 2026", "start_date": "2026-04-01", "end_date": "2026-04-30",
+            "name": "Carbon Miles Challenge - May", "start_date": "2026-05-01", "end_date": "2026-05-31",
         }, headers=h)
         assert resp.status_code == 201
-        assert resp.json()["name"] == "April 2026"
+        assert resp.json()["name"] == "Carbon Miles Challenge - May"
+
+    def test_create_challenge_with_description(self, client):
+        h = _register_and_get_header(client, "desc@test.com", "DescCreator")
+        resp = client.post("/challenges/", json={
+            "name": "June Challenge", "start_date": "2026-06-01", "end_date": "2026-06-30",
+            "description": "A test challenge with a description.",
+        }, headers=h)
+        assert resp.status_code == 201
+        body = resp.json()
+        assert body["description"] == "A test challenge with a description."
 
     def test_create_invalid_dates(self, client):
         h = _register_and_get_header(client, "bad@test.com", "Bad")
         resp = client.post("/challenges/", json={
-            "name": "Bad", "start_date": "2026-04-30", "end_date": "2026-04-01",
+            "name": "Bad", "start_date": "2026-05-31", "end_date": "2026-05-01",
         }, headers=h)
         assert resp.status_code == 400
 
@@ -77,8 +87,8 @@ class TestLeaderboard:
         client.post(f"/challenges/{ch_id}/join", headers=h2)
 
         # Log steps during challenge period
-        client.post("/steps/", json={"date": "2026-04-15", "step_count": 15000}, headers=h1)
-        client.post("/steps/", json={"date": "2026-04-15", "step_count": 20000}, headers=h2)
+        client.post("/steps/", json={"date": "2026-05-15", "step_count": 15000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-05-15", "step_count": 20000}, headers=h2)
 
         resp = client.get(f"/leaderboard/{ch_id}")
         assert resp.status_code == 200
@@ -98,7 +108,7 @@ class TestTrailEndpoint:
         h = _register_and_get_header(client, "trail@test.com", "Trail")
         ch_id = _create_challenge(client, h)
         client.post(f"/challenges/{ch_id}/join", headers=h)
-        client.post("/steps/", json={"date": "2026-04-15", "step_count": 10000}, headers=h)
+        client.post("/steps/", json={"date": "2026-05-15", "step_count": 10000}, headers=h)
 
         resp = client.get(f"/leaderboard/{ch_id}/trail")
         assert resp.status_code == 200
@@ -117,9 +127,9 @@ class TestOverallLeaderboard:
     def test_overall_leaderboard_ranked(self, client):
         h1 = _register_and_get_header(client, "oa@test.com", "Alice")
         h2 = _register_and_get_header(client, "ob@test.com", "Bob")
-        client.post("/steps/", json={"date": "2026-04-10", "step_count": 5000}, headers=h1)
-        client.post("/steps/", json={"date": "2026-04-11", "step_count": 3000}, headers=h1)
-        client.post("/steps/", json={"date": "2026-04-10", "step_count": 20000}, headers=h2)
+        client.post("/steps/", json={"date": "2026-05-10", "step_count": 5000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-05-11", "step_count": 3000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-05-10", "step_count": 20000}, headers=h2)
 
         resp = client.get("/leaderboard/overall")
         assert resp.status_code == 200
@@ -137,7 +147,7 @@ class TestOverallTrail:
     def test_overall_trail_progress(self, client):
         h = _register_and_get_header(client, "ot@test.com", "Trekker")
         client.post("/steps/", json={"date": "2026-01-15", "step_count": 10000}, headers=h)
-        client.post("/steps/", json={"date": "2026-04-15", "step_count": 10000}, headers=h)
+        client.post("/steps/", json={"date": "2026-05-15", "step_count": 10000}, headers=h)
 
         resp = client.get("/leaderboard/overall/trail")
         assert resp.status_code == 200
@@ -156,7 +166,7 @@ class TestOverallMyStats:
     def test_overall_my_stats(self, client):
         h = _register_and_get_header(client, "oms@test.com", "MyStat")
         client.post("/steps/", json={"date": "2026-01-10", "step_count": 5000}, headers=h)
-        client.post("/steps/", json={"date": "2026-04-10", "step_count": 15000}, headers=h)
+        client.post("/steps/", json={"date": "2026-05-10", "step_count": 15000}, headers=h)
 
         resp = client.get("/leaderboard/overall/my-stats", headers=h)
         assert resp.status_code == 200
@@ -180,8 +190,8 @@ class TestOverallMyStats:
     def test_overall_my_stats_rank(self, client):
         h1 = _register_and_get_header(client, "omr1@test.com", "Leader")
         h2 = _register_and_get_header(client, "omr2@test.com", "Follower")
-        client.post("/steps/", json={"date": "2026-04-10", "step_count": 30000}, headers=h1)
-        client.post("/steps/", json={"date": "2026-04-10", "step_count": 5000}, headers=h2)
+        client.post("/steps/", json={"date": "2026-05-10", "step_count": 30000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-05-10", "step_count": 5000}, headers=h2)
 
         resp = client.get("/leaderboard/overall/my-stats", headers=h2)
         assert resp.status_code == 200
@@ -220,8 +230,8 @@ class TestMyStats:
         h = _register_and_get_header(client, "stats@test.com", "Stats")
         ch_id = _create_challenge(client, h)
         client.post(f"/challenges/{ch_id}/join", headers=h)
-        client.post("/steps/", json={"date": "2026-04-10", "step_count": 8000}, headers=h)
-        client.post("/steps/", json={"date": "2026-04-11", "step_count": 12000}, headers=h)
+        client.post("/steps/", json={"date": "2026-05-10", "step_count": 8000}, headers=h)
+        client.post("/steps/", json={"date": "2026-05-11", "step_count": 12000}, headers=h)
 
         resp = client.get(f"/challenges/{ch_id}/my-stats", headers=h)
         assert resp.status_code == 200
@@ -258,8 +268,8 @@ class TestMyStats:
         ch_id = _create_challenge(client, h1)
         client.post(f"/challenges/{ch_id}/join", headers=h1)
         client.post(f"/challenges/{ch_id}/join", headers=h2)
-        client.post("/steps/", json={"date": "2026-04-10", "step_count": 20000}, headers=h1)
-        client.post("/steps/", json={"date": "2026-04-10", "step_count": 5000}, headers=h2)
+        client.post("/steps/", json={"date": "2026-05-10", "step_count": 20000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-05-10", "step_count": 5000}, headers=h2)
 
         resp = client.get(f"/challenges/{ch_id}/my-stats", headers=h2)
         assert resp.status_code == 200

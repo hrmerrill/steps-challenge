@@ -9,6 +9,7 @@ from app.models.challenge import MilesClubTier
 
 class ChallengeCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
+    description: str | None = Field(default=None, max_length=5000)
     start_date: datetime.date
     end_date: datetime.date
 
@@ -16,6 +17,7 @@ class ChallengeCreate(BaseModel):
 class ChallengeResponse(BaseModel):
     id: int
     name: str
+    description: str | None = None
     start_date: datetime.date
     end_date: datetime.date
     is_active: bool

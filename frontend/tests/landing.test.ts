@@ -40,7 +40,8 @@ const mockGetUser = vi.mocked(getCurrentUser);
 
 const ACTIVE_CHALLENGE = {
   id: 1,
-  name: "April 2026",
+  name: "Carbon Miles Challenge - May",
+  description: "Walk your way through May!",
   start_date: "2026-04-01",
   end_date: "2026-04-30",
   is_active: true,
@@ -49,7 +50,8 @@ const ACTIVE_CHALLENGE = {
 
 const FUTURE_CHALLENGE = {
   id: 2,
-  name: "May 2026",
+  name: "June Challenge",
+  description: null,
   start_date: "2099-05-01",
   end_date: "2099-05-31",
   is_active: true,
@@ -59,6 +61,7 @@ const FUTURE_CHALLENGE = {
 const PAST_CHALLENGE = {
   id: 3,
   name: "March 2026",
+  description: null,
   start_date: "2020-03-01",
   end_date: "2020-03-31",
   is_active: false,
@@ -258,5 +261,69 @@ describe("landing page", () => {
 
     expect(container.querySelector("#join-btn")).toBeNull();
     expect(container.innerHTML).toContain("has ended");
+  });
+
+  it("shows How It Works button in status banner", async () => {
+    mockIsAuth.mockReturnValue(false);
+    mockGetUser.mockReturnValue(null);
+
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/challenges/") return [ACTIVE_CHALLENGE];
+      if (path.startsWith("/leaderboard/")) return [];
+      return [];
+    });
+
+    const { renderLanding } = await import("../src/pages/landing");
+    await renderLanding(container);
+
+    const btn = container.querySelector("#how-it-works-btn");
+    expect(btn).not.toBeNull();
+    expect(btn!.textContent).toContain("How It Works");
+  });
+
+  it("toggles How It Works card on click", async () => {
+    mockIsAuth.mockReturnValue(false);
+    mockGetUser.mockReturnValue(null);
+
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/challenges/") return [ACTIVE_CHALLENGE];
+      if (path.startsWith("/leaderboard/")) return [];
+      return [];
+    });
+
+    const { renderLanding } = await import("../src/pages/landing");
+    await renderLanding(container);
+
+    const card = container.querySelector("#how-it-works-card") as HTMLElement;
+    expect(card.style.display).toBe("none");
+
+    // Click to open
+    container.querySelector<HTMLElement>("#how-it-works-btn")!.click();
+    expect(card.style.display).toBe("block");
+
+    // Click close to hide
+    container.querySelector<HTMLElement>("#how-it-works-close")!.click();
+    expect(card.style.display).toBe("none");
+  });
+
+  it("shows challenge description in How It Works card", async () => {
+    mockIsAuth.mockReturnValue(false);
+    mockGetUser.mockReturnValue(null);
+
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/challenges/") return [ACTIVE_CHALLENGE];
+      if (path.startsWith("/leaderboard/")) return [];
+      return [];
+    });
+
+    const { renderLanding } = await import("../src/pages/landing");
+    await renderLanding(container);
+
+    const card = container.querySelector("#how-it-works-card") as HTMLElement;
+    expect(card.innerHTML).toContain("Walk your way through May!");
+    expect(card.innerHTML).toContain("Miles Clubs");
+    expect(card.innerHTML).toContain("Virtual Trail Map");
+    expect(card.innerHTML).toContain("Leaderboard");
+    expect(card.innerHTML).toContain("300,000+");
   });
 });

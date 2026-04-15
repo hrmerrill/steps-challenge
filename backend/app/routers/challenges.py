@@ -28,13 +28,17 @@ def create_challenge(
     if body.end_date <= body.start_date:
         raise HTTPException(status_code=400, detail="end_date must be after start_date")
 
-    challenge = Challenge(name=body.name, start_date=body.start_date, end_date=body.end_date)
+    challenge = Challenge(
+        name=body.name, description=body.description,
+        start_date=body.start_date, end_date=body.end_date,
+    )
     db.add(challenge)
     db.commit()
     db.refresh(challenge)
     return ChallengeResponse(
         id=challenge.id,
         name=challenge.name,
+        description=challenge.description,
         start_date=challenge.start_date,
         end_date=challenge.end_date,
         is_active=challenge.is_active,
@@ -50,7 +54,7 @@ def list_challenges(db: Session = Depends(get_db)):
     for ch in challenges:
         count = db.query(ChallengeParticipant).filter(ChallengeParticipant.challenge_id == ch.id).count()
         result.append(ChallengeResponse(
-            id=ch.id, name=ch.name, start_date=ch.start_date,
+            id=ch.id, name=ch.name, description=ch.description, start_date=ch.start_date,
             end_date=ch.end_date, is_active=ch.is_active, participant_count=count,
         ))
     return result

@@ -314,3 +314,97 @@
   cursor: pointer;
   min-width: 200px;
 }
+
+/* --- How It Works --- */
+.challenge-status {
+  justify-content: space-between;
+}
+
+.how-it-works-toggle {
+  background: none;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-md);
+  padding: 0.2rem var(--space-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: inherit;
+  white-space: nowrap;
+  opacity: 0.8;
+  transition: opacity 0.15s ease;
+}
+
+.how-it-works-toggle:hover {
+  opacity: 1;
+}
+
+.how-it-works-card {
+  margin-bottom: var(--space-lg);
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.how-it-works-close {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: var(--color-text-muted);
+  padding: 0 var(--space-xs);
+  line-height: 1;
+}
+
+.how-it-works-close:hover {
+  color: var(--color-text);
+}
+
+.how-it-works-section {
+  margin-bottom: var(--space-md);
+}
+
+.how-it-works-section:last-child {
+  margin-bottom: 0;
+}
+
+.how-it-works-section h4 {
+  font-size: 0.925rem;
+  font-weight: 600;
+  margin-bottom: var(--space-xs);
+}
+
+.how-it-works-section p {
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin: 0 0 var(--space-xs);
+}
+
+.how-it-works-tiers {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-sm) 0;
+}
+
+.how-it-works-tiers li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-xs) 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.how-it-works-tiers .badge {
+  min-width: 80px;
+  justify-content: center;
+}
