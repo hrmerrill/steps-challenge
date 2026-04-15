@@ -10,9 +10,10 @@ from app.database import get_db
 from app.models.challenge import Challenge, ChallengeParticipant
 from app.models.steps import DailySteps
 from app.models.user import User
-from app.schemas.challenge import ChallengeCreate, ChallengeResponse
+from app.schemas.challenge import ChallengeCreate, ChallengeResponse, ChallengeMembership, UserChallengeStats
 from app.services.auth import get_current_user
 from app.services.miles_clubs import calculate_tier
+from app.services.trail import steps_to_miles
 
 router = APIRouter(prefix="/challenges", tags=["challenges"])
 
@@ -95,3 +96,98 @@ def join_challenge(
     db.commit()
 
     return {"joined": True, "miles_club_tier": tier.value, "prior_month_steps": prior_steps}
+
+
+@router.get("/{challenge_id}/membership", response_model=ChallengeMembership)
+def get_membership(
+    challenge_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Check if the current user has joined a challenge."""
+    challenge = db.query(Challenge).filter(Challenge.id == challenge_id).first()
+    if not challenge:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+
+    participant = (
+        db.query(ChallengeParticipant)
+        .filter(ChallengeParticipant.challenge_id == challenge_id, ChallengeParticipant.user_id == user.id)
+        .first()
+    )
+    if participant:
+        return ChallengeMembership(joined=True, miles_club_tier=participant.miles_club_tier)
+    return ChallengeMembership(joined=False)
+
+
+@router.get("/{challenge_id}/my-stats", response_model=UserChallengeStats)
+def get_my_stats(
+    challenge_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Get the authenticated user's stats for a challenge."""
+    challenge = db.query(Challenge).filter(Challenge.id == challenge_id).first()
+    if not challenge:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+
+    participant = (
+        db.query(ChallengeParticipant)
+        .filter(ChallengeParticipant.challenge_id == challenge_id, ChallengeParticipant.user_id == user.id)
+        .first()
+    )
+    if not participant:
+        raise HTTPException(status_code=404, detail="Not a participant in this challenge")
+
+    # User's total steps and days logged during the challenge period
+    user_steps = (
+        db.query(
+            func.coalesce(func.sum(DailySteps.step_count), 0).label("total"),
+            func.count(DailySteps.id).label("days"),
+        )
+        .filter(
+            DailySteps.user_id == user.id,
+            DailySteps.date >= challenge.start_date,
+            DailySteps.date <= challenge.end_date,
+        )
+        .one()
+    )
+    total_steps = int(user_steps.total)
+    days_logged = int(user_steps.days)
+
+    # Calculate rank: count participants with more steps
+    participants_above = (
+        db.query(func.count())
+        .select_from(ChallengeParticipant)
+        .outerjoin(
+            DailySteps,
+            (DailySteps.user_id == ChallengeParticipant.user_id)
+            & (DailySteps.date >= challenge.start_date)
+            & (DailySteps.date <= challenge.end_date),
+        )
+        .filter(ChallengeParticipant.challenge_id == challenge_id)
+        .group_by(ChallengeParticipant.user_id)
+        .having(func.coalesce(func.sum(DailySteps.step_count), 0) > total_steps)
+        .subquery()
+    )
+    rank = db.query(func.count()).select_from(participants_above).scalar() + 1
+
+    total_participants = (
+        db.query(ChallengeParticipant)
+        .filter(ChallengeParticipant.challenge_id == challenge_id)
+        .count()
+    )
+
+    avg_daily = round(total_steps / days_logged, 1) if days_logged > 0 else 0.0
+
+    return UserChallengeStats(
+        user_id=user.id,
+        display_name=user.display_name,
+        challenge_id=challenge_id,
+        total_steps=total_steps,
+        total_miles=steps_to_miles(total_steps),
+        rank=rank,
+        total_participants=total_participants,
+        days_logged=days_logged,
+        average_daily=avg_daily,
+        miles_club_tier=participant.miles_club_tier,
+    )

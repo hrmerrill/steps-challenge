@@ -39,3 +39,25 @@ class TrailProgress(BaseModel):
     trail_name: str
     trail_length_miles: float
     progress_percent: float
+
+
+class UserChallengeStats(BaseModel):
+    """Per-challenge stats for the authenticated user."""
+
+    user_id: int
+    display_name: str
+    challenge_id: int
+    total_steps: int
+    total_miles: float
+    rank: int
+    total_participants: int
+    days_logged: int
+    average_daily: float
+    miles_club_tier: MilesClubTier
+
+
+class ChallengeMembership(BaseModel):
+    """Whether the current user has joined a challenge."""
+
+    joined: bool
+    miles_club_tier: MilesClubTier | None = None

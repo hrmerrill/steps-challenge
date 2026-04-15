@@ -106,3 +106,86 @@ class TestTrailEndpoint:
         assert body["trail_name"] == "Appalachian Trail"
         assert body["total_group_steps"] == 10000
         assert body["progress_percent"] > 0
+
+
+class TestMembership:
+    def test_membership_not_joined(self, client):
+        h = _register_and_get_header(client, "notin@test.com", "NotIn")
+        ch_id = _create_challenge(client, h)
+        resp = client.get(f"/challenges/{ch_id}/membership", headers=h)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["joined"] is False
+        assert body["miles_club_tier"] is None
+
+    def test_membership_joined(self, client):
+        h = _register_and_get_header(client, "joined@test.com", "Joined")
+        ch_id = _create_challenge(client, h)
+        client.post(f"/challenges/{ch_id}/join", headers=h)
+        resp = client.get(f"/challenges/{ch_id}/membership", headers=h)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["joined"] is True
+        assert body["miles_club_tier"] is not None
+
+    def test_membership_nonexistent_challenge(self, client):
+        h = _register_and_get_header(client, "ghost2@test.com", "Ghost2")
+        resp = client.get("/challenges/9999/membership", headers=h)
+        assert resp.status_code == 404
+
+
+class TestMyStats:
+    def test_my_stats_with_steps(self, client):
+        h = _register_and_get_header(client, "stats@test.com", "Stats")
+        ch_id = _create_challenge(client, h)
+        client.post(f"/challenges/{ch_id}/join", headers=h)
+        client.post("/steps/", json={"date": "2026-04-10", "step_count": 8000}, headers=h)
+        client.post("/steps/", json={"date": "2026-04-11", "step_count": 12000}, headers=h)
+
+        resp = client.get(f"/challenges/{ch_id}/my-stats", headers=h)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total_steps"] == 20000
+        assert body["days_logged"] == 2
+        assert body["average_daily"] == 10000.0
+        assert body["rank"] == 1
+        assert body["total_participants"] == 1
+        assert body["total_miles"] == 10.0
+
+    def test_my_stats_not_participant(self, client):
+        h1 = _register_and_get_header(client, "creator2@test.com", "Creator2")
+        h2 = _register_and_get_header(client, "outsider@test.com", "Outsider")
+        ch_id = _create_challenge(client, h1)
+        resp = client.get(f"/challenges/{ch_id}/my-stats", headers=h2)
+        assert resp.status_code == 404
+
+    def test_my_stats_no_steps(self, client):
+        h = _register_and_get_header(client, "lazy@test.com", "Lazy")
+        ch_id = _create_challenge(client, h)
+        client.post(f"/challenges/{ch_id}/join", headers=h)
+        resp = client.get(f"/challenges/{ch_id}/my-stats", headers=h)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total_steps"] == 0
+        assert body["days_logged"] == 0
+        assert body["average_daily"] == 0.0
+        assert body["rank"] == 1
+
+    def test_my_stats_rank_calculation(self, client):
+        h1 = _register_and_get_header(client, "first@test.com", "First")
+        h2 = _register_and_get_header(client, "second@test.com", "Second")
+        ch_id = _create_challenge(client, h1)
+        client.post(f"/challenges/{ch_id}/join", headers=h1)
+        client.post(f"/challenges/{ch_id}/join", headers=h2)
+        client.post("/steps/", json={"date": "2026-04-10", "step_count": 20000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-04-10", "step_count": 5000}, headers=h2)
+
+        resp = client.get(f"/challenges/{ch_id}/my-stats", headers=h2)
+        assert resp.status_code == 200
+        assert resp.json()["rank"] == 2
+        assert resp.json()["total_participants"] == 2
+
+    def test_my_stats_nonexistent_challenge(self, client):
+        h = _register_and_get_header(client, "noexist@test.com", "NoExist")
+        resp = client.get("/challenges/9999/my-stats", headers=h)
+        assert resp.status_code == 404

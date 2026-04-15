@@ -138,6 +138,11 @@
   border-bottom: none;
 }
 
+.leaderboard-row--current {
+  background: rgba(79, 70, 229, 0.06);
+  border-left: 3px solid var(--color-primary);
+}
+
 .leaderboard-rank {
   font-weight: 700;
   min-width: 2rem;
@@ -150,7 +155,65 @@
   font-weight: 500;
 }
 
+.leaderboard-you {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 .leaderboard-steps {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* --- Stats Card --- */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-md);
+  padding: var(--space-md);
+}
+
+.stat-item {
+  text-align: center;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* --- Join Challenge Banner --- */
+.join-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md) var(--space-lg);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.08), rgba(79, 70, 229, 0.02));
+  border: 1px dashed var(--color-primary);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--space-lg);
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.join-banner p {
+  margin: 0;
+  font-weight: 500;
+}
+
+.join-banner .btn {
+  white-space: nowrap;
 }

@@ -32,10 +32,11 @@ export function tierBadgeHtml(tier: string): string {
   return `<span class="badge ${badge.class}">${badge.label}</span>`;
 }
 
-/** Render the leaderboard card into a container. */
+/** Render the leaderboard card into a container. Highlights currentUserId if provided. */
 export async function renderLeaderboard(
   container: HTMLElement,
   challengeId: number,
+  currentUserId?: number,
 ): Promise<void> {
   try {
     const entries = await apiFetch<LeaderboardEntry[]>(
@@ -53,15 +54,20 @@ export async function renderLeaderboard(
     }
 
     const rows = entries
-      .map(
-        (e) => `
-        <div class="leaderboard-row">
+      .map((e) => {
+        const isCurrentUser = currentUserId != null && e.user_id === currentUserId;
+        const rowClass = isCurrentUser
+          ? "leaderboard-row leaderboard-row--current"
+          : "leaderboard-row";
+        const youTag = isCurrentUser ? ' <span class="leaderboard-you">You</span>' : "";
+        return `
+        <div class="${rowClass}">
           <span class="leaderboard-rank">${e.rank}</span>
-          <span class="leaderboard-name">${e.display_name} ${tierBadgeHtml(e.miles_club_tier)}</span>
+          <span class="leaderboard-name">${e.display_name}${youTag} ${tierBadgeHtml(e.miles_club_tier)}</span>
           <span class="leaderboard-steps">${formatSteps(e.total_steps)} steps</span>
         </div>
-      `,
-      )
+      `;
+      })
       .join("");
 
     container.innerHTML = `
