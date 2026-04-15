@@ -2,7 +2,7 @@
 
 import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models.challenge import MilesClubTier
 
@@ -12,6 +12,15 @@ class ChallengeCreate(BaseModel):
     description: str | None = Field(default=None, max_length=5000)
     start_date: datetime.date
     end_date: datetime.date
+
+    @model_validator(mode="after")
+    def validate_dates(self) -> "ChallengeCreate":
+        if self.end_date <= self.start_date:
+            raise ValueError("end_date must be after start_date")
+        duration = (self.end_date - self.start_date).days
+        if duration > 366:
+            raise ValueError("Challenge duration cannot exceed 366 days")
+        return self
 
 
 class ChallengeResponse(BaseModel):

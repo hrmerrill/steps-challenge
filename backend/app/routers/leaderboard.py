@@ -1,6 +1,6 @@
 """Leaderboard router — rankings, stats, and trail progress."""
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -115,7 +115,7 @@ def get_overall_my_stats(
 
 
 @router.get("/{challenge_id}", response_model=list[LeaderboardEntry])
-def get_leaderboard(challenge_id: int, db: Session = Depends(get_db)):
+def get_leaderboard(challenge_id: int = Path(gt=0), db: Session = Depends(get_db)):
     """Get ranked leaderboard for a challenge."""
     challenge = db.query(Challenge).filter(Challenge.id == challenge_id).first()
     if not challenge:
@@ -157,7 +157,7 @@ def get_leaderboard(challenge_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{challenge_id}/trail", response_model=TrailProgress)
 def get_trail_progress(
-    challenge_id: int,
+    challenge_id: int = Path(gt=0),
     trail: str = Query("appalachian", description="Trail key: appalachian, pacific_crest, continental_divide"),
     db: Session = Depends(get_db),
 ):

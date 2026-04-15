@@ -12,6 +12,7 @@ from sqlalchemy.pool import StaticPool
 
 from app.database import Base, get_db
 from app.main import app
+from app.routers.auth import limiter
 
 # In-memory SQLite for tests — no PostgreSQL dependency needed to run tests
 TEST_DATABASE_URL = "sqlite://"
@@ -47,6 +48,8 @@ def client(db_session):
             pass
 
     app.dependency_overrides[get_db] = _override_get_db
+    limiter.enabled = False
     with TestClient(app) as tc:
         yield tc
+    limiter.enabled = True
     app.dependency_overrides.clear()

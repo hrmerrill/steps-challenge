@@ -34,8 +34,8 @@ class TestLogSteps:
 
     def test_get_steps(self, client):
         h = self._auth_header(client)
-        client.post("/steps/", json={"date": "2026-04-15", "step_count": 10000}, headers=h)
-        client.post("/steps/", json={"date": "2026-04-16", "step_count": 12000}, headers=h)
+        client.post("/steps/", json={"date": "2026-04-14", "step_count": 10000}, headers=h)
+        client.post("/steps/", json={"date": "2026-04-15", "step_count": 12000}, headers=h)
         resp = client.get("/steps/", headers=h)
         assert resp.status_code == 200
         assert len(resp.json()) == 2
@@ -61,8 +61,8 @@ class TestLogSteps:
 
     def test_summary(self, client):
         h = self._auth_header(client)
-        client.post("/steps/", json={"date": "2026-04-15", "step_count": 10000}, headers=h)
-        client.post("/steps/", json={"date": "2026-04-16", "step_count": 12000}, headers=h)
+        client.post("/steps/", json={"date": "2026-04-14", "step_count": 10000}, headers=h)
+        client.post("/steps/", json={"date": "2026-04-15", "step_count": 12000}, headers=h)
         resp = client.get("/steps/summary", headers=h)
         assert resp.status_code == 200
         body = resp.json()
@@ -70,3 +70,13 @@ class TestLogSteps:
         assert body["days_logged"] == 2
         assert body["average_daily"] == 11000.0
         assert body["total_miles"] > 0
+
+    def test_log_future_date_rejected(self, client):
+        h = self._auth_header(client)
+        resp = client.post("/steps/", json={"date": "2099-01-01", "step_count": 5000}, headers=h)
+        assert resp.status_code == 422
+
+    def test_log_ancient_date_rejected(self, client):
+        h = self._auth_header(client)
+        resp = client.post("/steps/", json={"date": "2020-01-01", "step_count": 5000}, headers=h)
+        assert resp.status_code == 422

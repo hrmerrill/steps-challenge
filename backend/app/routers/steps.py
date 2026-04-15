@@ -2,7 +2,7 @@
 
 import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -95,7 +95,7 @@ def get_summary(
 
 
 @router.delete("/{step_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_steps(step_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def delete_steps(step_id: int = Path(gt=0), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Delete a step entry (only own entries)."""
     entry = db.query(DailySteps).filter(DailySteps.id == step_id, DailySteps.user_id == user.id).first()
     if not entry:

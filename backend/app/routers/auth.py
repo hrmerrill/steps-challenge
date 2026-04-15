@@ -1,6 +1,8 @@
 """Auth router — registration, login, and current-user endpoint."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -9,10 +11,12 @@ from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
 from app.services.auth import hash_password, verify_password, create_access_token, get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register(body: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(body: UserCreate, request: Request, db: Session = Depends(get_db)):
     """Create a new user account and return a JWT token."""
     existing = db.query(User).filter(User.email == body.email).first()
     if existing:
@@ -32,7 +36,8 @@ def register(body: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(body: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def login(body: UserLogin, request: Request, db: Session = Depends(get_db)):
     """Authenticate and return a JWT token."""
     user = db.query(User).filter(User.email == body.email).first()
     if not user or not verify_password(body.password, user.password_hash):
