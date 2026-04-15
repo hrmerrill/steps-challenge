@@ -1,5 +1,5 @@
 /**
- * Register page — create account + optional provider sync.
+ * Register page — create account.
  */
 
 import { register } from "../auth";
@@ -27,23 +27,6 @@ export function renderRegister(container: HTMLElement): void {
           <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
           <p id="register-error" style="color: var(--color-error); margin-top: var(--space-sm); display: none;"></p>
         </form>
-
-        <hr style="margin: var(--space-lg) 0; border: none; border-top: 1px solid var(--color-border);" />
-
-        <div>
-          <p style="font-weight: 500; margin-bottom: var(--space-sm);">Connect a Fitness Tracker (optional)</p>
-          <p style="font-size: 0.875rem; color: var(--color-text-muted); margin-bottom: var(--space-md);">
-            Sync your steps automatically. You can also enter steps manually.
-          </p>
-          <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
-            <button class="btn btn-secondary" disabled title="Coming soon">Garmin</button>
-            <button class="btn btn-secondary" disabled title="Coming soon">Strava</button>
-            <button class="btn btn-secondary" disabled title="Coming soon">Fitbit</button>
-          </div>
-          <p style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: var(--space-xs);">
-            Provider sync coming soon — enter steps manually for now.
-          </p>
-        </div>
 
         <p style="margin-top: var(--space-lg); text-align: center;">
           Already have an account? <a href="#/login">Login</a>

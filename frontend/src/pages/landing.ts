@@ -136,7 +136,7 @@ function renderHowItWorks(challenge: Challenge): string {
           </div>
           <div class="how-it-works-section">
             <h4>Logging Steps</h4>
-            <p>Log steps manually each day, or sync from <strong>Garmin</strong>, <strong>Strava</strong>, or <strong>Fitbit</strong>. You can edit or delete manual entries anytime from the Log Steps page.</p>
+            <p>Log your steps manually each day. You can edit or delete entries anytime from the Log Steps page.</p>
           </div>
         </div>
       </div>
