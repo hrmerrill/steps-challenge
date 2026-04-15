@@ -129,13 +129,13 @@ class TestChallengeParticipantModel:
     def test_create_participant(self, db_session):
         user, ch = self._setup(db_session)
         cp = ChallengeParticipant(
-            challenge_id=ch.id, user_id=user.id, miles_club_tier=MilesClubTier.GOLD
+            challenge_id=ch.id, user_id=user.id, miles_club_tier=MilesClubTier.HIGH
         )
         db_session.add(cp)
         db_session.commit()
 
         assert cp.id is not None
-        assert cp.miles_club_tier == MilesClubTier.GOLD
+        assert cp.miles_club_tier == MilesClubTier.HIGH
 
     def test_default_tier_is_none(self, db_session):
         user, ch = self._setup(db_session)
@@ -156,7 +156,7 @@ class TestChallengeParticipantModel:
             db_session.rollback()
 
     def test_miles_club_tier_values(self):
-        assert MilesClubTier.GOLD.value == "gold"
-        assert MilesClubTier.SILVER.value == "silver"
-        assert MilesClubTier.BRONZE.value == "bronze"
+        assert MilesClubTier.HIGH.value == "high"
+        assert MilesClubTier.MID.value == "mid"
+        assert MilesClubTier.LOW.value == "low"
         assert MilesClubTier.NONE.value == "none"

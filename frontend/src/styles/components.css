@@ -93,19 +93,19 @@
   text-transform: uppercase;
 }
 
-.badge--gold {
-  background: rgba(245, 158, 11, 0.15);
-  color: var(--color-gold);
+.badge--high {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--color-tier-high);
 }
 
-.badge--silver {
+.badge--mid {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--color-tier-mid);
+}
+
+.badge--low {
   background: rgba(148, 163, 184, 0.15);
-  color: var(--color-silver);
-}
-
-.badge--bronze {
-  background: rgba(217, 119, 6, 0.15);
-  color: var(--color-bronze);
+  color: var(--color-tier-low);
 }
 
 /* --- Form Inputs --- */

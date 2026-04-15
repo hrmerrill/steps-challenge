@@ -14,9 +14,9 @@ export interface LeaderboardEntry {
 }
 
 const TIER_BADGE: Record<string, { label: string; class: string }> = {
-  gold: { label: "Gold", class: "badge--gold" },
-  silver: { label: "Silver", class: "badge--silver" },
-  bronze: { label: "Bronze", class: "badge--bronze" },
+  high: { label: ">10k steps/day", class: "badge--high" },
+  mid: { label: "5k\u201310k steps/day", class: "badge--mid" },
+  low: { label: "0\u20135k steps/day", class: "badge--low" },
   none: { label: "", class: "" },
 };
 

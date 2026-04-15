@@ -18,20 +18,20 @@ describe("formatSteps", () => {
 });
 
 describe("tierBadgeHtml", () => {
-  it("returns gold badge HTML", () => {
-    const html = tierBadgeHtml("gold");
-    expect(html).toContain("badge--gold");
-    expect(html).toContain("Gold");
+  it("returns high badge HTML", () => {
+    const html = tierBadgeHtml("high");
+    expect(html).toContain("badge--high");
+    expect(html).toContain(">10k steps/day");
   });
 
-  it("returns silver badge HTML", () => {
-    const html = tierBadgeHtml("silver");
-    expect(html).toContain("badge--silver");
+  it("returns mid badge HTML", () => {
+    const html = tierBadgeHtml("mid");
+    expect(html).toContain("badge--mid");
   });
 
-  it("returns bronze badge HTML", () => {
-    const html = tierBadgeHtml("bronze");
-    expect(html).toContain("badge--bronze");
+  it("returns low badge HTML", () => {
+    const html = tierBadgeHtml("low");
+    expect(html).toContain("badge--low");
   });
 
   it("returns empty string for none tier", () => {

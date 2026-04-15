@@ -118,11 +118,11 @@ function renderHowItWorks(challenge: Challenge): string {
           </div>
           <div class="how-it-works-section">
             <h4>Miles Clubs</h4>
-            <p>When you join, you're placed into a tier based on your <strong>total steps from the previous month</strong>:</p>
+            <p>When you join, you're placed into a tier based on your <strong>average daily steps from the previous month</strong>:</p>
             <ul class="how-it-works-tiers">
-              <li><span class="badge badge--gold">Gold</span> 300,000+ steps/month</li>
-              <li><span class="badge badge--silver">Silver</span> 200,000+ steps/month</li>
-              <li><span class="badge badge--bronze">Bronze</span> 100,000+ steps/month</li>
+              <li><span class="badge badge--high">&gt;10k steps/day</span> averaged 10,000+ steps/day</li>
+              <li><span class="badge badge--mid">5k\u201310k steps/day</span> averaged 5,000\u201310,000 steps/day</li>
+              <li><span class="badge badge--low">0\u20135k steps/day</span> averaged under 5,000 steps/day</li>
             </ul>
             <p>Tiers create fair competition groups so everyone can compete with peers at a similar activity level.</p>
           </div>
@@ -146,12 +146,12 @@ function renderHowItWorks(challenge: Challenge): string {
 
 function renderStatsCard(container: HTMLElement, stats: UserChallengeStats): void {
   const tierLabels: Record<string, string> = {
-    gold: "Gold",
-    silver: "Silver",
-    bronze: "Bronze",
-    none: "—",
+    high: ">10k steps/day",
+    mid: "5k\u201310k steps/day",
+    low: "0\u20135k steps/day",
+    none: "\u2014",
   };
-  const tierLabel = tierLabels[stats.miles_club_tier] ?? "—";
+  const tierLabel = tierLabels[stats.miles_club_tier] ?? "\u2014";
 
   container.innerHTML = `
     <div class="card">

@@ -65,10 +65,10 @@ frontend/         TypeScript SPA
 ## Key Patterns
 
 ### Miles Clubs
-Tiers assigned at challenge start based on previous month's total steps:
-- 🥇 Gold: 300,000+ steps/month
-- 🥈 Silver: 200,000+ steps/month
-- 🥉 Bronze: 100,000+ steps/month
+Tiers assigned at challenge start based on previous month's average daily steps:
+- >10k steps/day: averaged 10,000+ steps/day
+- 5k–10k steps/day: averaged 5,000–10,000 steps/day
+- 0–5k steps/day: averaged under 5,000 steps/day
 
 Thresholds are configurable via environment variables.
 
@@ -108,9 +108,8 @@ cd frontend && npm test
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://localhost:5432/steps_challenge` |
 | `JWT_SECRET` | Secret key for JWT signing | `CHANGE-ME-in-production` |
 | `JWT_EXPIRE_MINUTES` | Token expiry | `1440` (24h) |
-| `MILES_CLUB_GOLD` | Gold tier threshold (steps/month) | `300000` |
-| `MILES_CLUB_SILVER` | Silver tier threshold | `200000` |
-| `MILES_CLUB_BRONZE` | Bronze tier threshold | `100000` |
+| `MILES_CLUB_HIGH` | High tier threshold (avg steps/day) | `10000` |
+| `MILES_CLUB_MID` | Mid tier threshold (avg steps/day) | `5000` |
 | `STEPS_PER_MILE` | Steps-to-miles conversion | `2000` |
 
 ## Common Tasks

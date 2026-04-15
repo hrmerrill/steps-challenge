@@ -136,13 +136,13 @@ describe("landing page", () => {
 
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [ACTIVE_CHALLENGE];
-      if (path === "/challenges/1/membership") return { joined: true, miles_club_tier: "silver" };
+      if (path === "/challenges/1/membership") return { joined: true, miles_club_tier: "mid" };
       if (path === "/challenges/1/my-stats") {
         return {
           user_id: 1, display_name: "Test", challenge_id: 1,
           total_steps: 50000, total_miles: 25.0, rank: 2,
           total_participants: 5, days_logged: 10, average_daily: 5000.0,
-          miles_club_tier: "silver",
+          miles_club_tier: "mid",
         };
       }
       if (path.startsWith("/leaderboard/")) return [];
@@ -324,6 +324,6 @@ describe("landing page", () => {
     expect(card.innerHTML).toContain("Miles Clubs");
     expect(card.innerHTML).toContain("Virtual Trail Map");
     expect(card.innerHTML).toContain("Leaderboard");
-    expect(card.innerHTML).toContain("300,000+");
+    expect(card.innerHTML).toContain("10,000+");
   });
 });

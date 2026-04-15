@@ -10,10 +10,10 @@ from app.database import Base
 
 
 class MilesClubTier(str, enum.Enum):
-    GOLD = "gold"
-    SILVER = "silver"
-    BRONZE = "bronze"
-    NONE = "none"
+    HIGH = "high"    # >10k steps/day
+    MID = "mid"      # 5k–10k steps/day
+    LOW = "low"      # 0–5k steps/day
+    NONE = "none"    # not assigned (overall view)
 
 
 class Challenge(Base):

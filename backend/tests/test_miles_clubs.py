@@ -1,36 +1,32 @@
 """Tests for miles club tier calculation."""
 
-from app.services.miles_clubs import calculate_tier, tier_emoji
+from app.services.miles_clubs import calculate_tier, tier_label
 from app.models.challenge import MilesClubTier
 
 
 class TestCalculateTier:
-    def test_gold_tier(self):
-        assert calculate_tier(300_000) == MilesClubTier.GOLD
-        assert calculate_tier(400_000) == MilesClubTier.GOLD
+    def test_high_tier(self):
+        assert calculate_tier(10_000) == MilesClubTier.HIGH
+        assert calculate_tier(15_000) == MilesClubTier.HIGH
 
-    def test_silver_tier(self):
-        assert calculate_tier(200_000) == MilesClubTier.SILVER
-        assert calculate_tier(299_999) == MilesClubTier.SILVER
+    def test_mid_tier(self):
+        assert calculate_tier(5_000) == MilesClubTier.MID
+        assert calculate_tier(9_999) == MilesClubTier.MID
 
-    def test_bronze_tier(self):
-        assert calculate_tier(100_000) == MilesClubTier.BRONZE
-        assert calculate_tier(199_999) == MilesClubTier.BRONZE
-
-    def test_no_tier(self):
-        assert calculate_tier(0) == MilesClubTier.NONE
-        assert calculate_tier(99_999) == MilesClubTier.NONE
+    def test_low_tier(self):
+        assert calculate_tier(0) == MilesClubTier.LOW
+        assert calculate_tier(4_999) == MilesClubTier.LOW
 
 
-class TestTierEmoji:
-    def test_gold_emoji(self):
-        assert tier_emoji(MilesClubTier.GOLD) == "🥇"
+class TestTierLabel:
+    def test_high_label(self):
+        assert tier_label(MilesClubTier.HIGH) == ">10k steps/day"
 
-    def test_silver_emoji(self):
-        assert tier_emoji(MilesClubTier.SILVER) == "🥈"
+    def test_mid_label(self):
+        assert tier_label(MilesClubTier.MID) == "5k\u201310k steps/day"
 
-    def test_bronze_emoji(self):
-        assert tier_emoji(MilesClubTier.BRONZE) == "🥉"
+    def test_low_label(self):
+        assert tier_label(MilesClubTier.LOW) == "0\u20135k steps/day"
 
-    def test_none_emoji(self):
-        assert tier_emoji(MilesClubTier.NONE) == ""
+    def test_none_label(self):
+        assert tier_label(MilesClubTier.NONE) == ""

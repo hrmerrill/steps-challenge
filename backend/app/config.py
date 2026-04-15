@@ -15,10 +15,9 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24  # 24 hours
 
-    # Miles club thresholds (steps per month)
-    miles_club_gold: int = 300_000
-    miles_club_silver: int = 200_000
-    miles_club_bronze: int = 100_000
+    # Miles club thresholds (average steps per day)
+    miles_club_high: int = 10_000
+    miles_club_mid: int = 5_000
 
     # Steps-to-miles conversion (average stride)
     steps_per_mile: int = 2_000

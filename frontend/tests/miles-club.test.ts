@@ -9,40 +9,46 @@ import {
 } from "../src/components/miles-club";
 
 describe("calculateTier", () => {
-  it("returns gold for 300k+ steps", () => {
-    expect(calculateTier(300_000)).toBe("gold");
-    expect(calculateTier(400_000)).toBe("gold");
+  it("returns high for 10k+ avg daily steps", () => {
+    expect(calculateTier(10_000)).toBe("high");
+    expect(calculateTier(15_000)).toBe("high");
   });
 
-  it("returns silver for 200k-299k steps", () => {
-    expect(calculateTier(200_000)).toBe("silver");
-    expect(calculateTier(299_999)).toBe("silver");
+  it("returns mid for 5k-9999 avg daily steps", () => {
+    expect(calculateTier(5_000)).toBe("mid");
+    expect(calculateTier(9_999)).toBe("mid");
   });
 
-  it("returns bronze for 100k-199k steps", () => {
-    expect(calculateTier(100_000)).toBe("bronze");
-    expect(calculateTier(199_999)).toBe("bronze");
-  });
-
-  it("returns none for under 100k steps", () => {
-    expect(calculateTier(0)).toBe("none");
-    expect(calculateTier(99_999)).toBe("none");
+  it("returns low for under 5k avg daily steps", () => {
+    expect(calculateTier(0)).toBe("low");
+    expect(calculateTier(4_999)).toBe("low");
   });
 
   it("uses custom thresholds", () => {
-    const custom = { gold: 100, silver: 50, bronze: 10 };
-    expect(calculateTier(100, custom)).toBe("gold");
-    expect(calculateTier(50, custom)).toBe("silver");
-    expect(calculateTier(10, custom)).toBe("bronze");
-    expect(calculateTier(5, custom)).toBe("none");
+    const custom = { high: 100, mid: 50 };
+    expect(calculateTier(100, custom)).toBe("high");
+    expect(calculateTier(50, custom)).toBe("mid");
+    expect(calculateTier(10, custom)).toBe("low");
   });
 });
 
 describe("renderMilesClubBadge", () => {
-  it("renders gold badge", () => {
-    const html = renderMilesClubBadge("gold");
-    expect(html).toContain("Gold Club");
-    expect(html).toContain("badge--gold");
+  it("renders high badge", () => {
+    const html = renderMilesClubBadge("high");
+    expect(html).toContain(">10k steps/day");
+    expect(html).toContain("badge--high");
+  });
+
+  it("renders mid badge", () => {
+    const html = renderMilesClubBadge("mid");
+    expect(html).toContain("steps/day");
+    expect(html).toContain("badge--mid");
+  });
+
+  it("renders low badge", () => {
+    const html = renderMilesClubBadge("low");
+    expect(html).toContain("steps/day");
+    expect(html).toContain("badge--low");
   });
 
   it("returns empty string for none", () => {
@@ -51,14 +57,14 @@ describe("renderMilesClubBadge", () => {
 });
 
 describe("renderTierProgress", () => {
-  it("shows progress toward bronze for new users", () => {
-    const html = renderTierProgress(50_000);
-    expect(html).toContain("Bronze");
-    expect(html).toContain("50,000");
+  it("shows progress toward mid for low-tier users", () => {
+    const html = renderTierProgress(2_500);
+    expect(html).toContain("5k");
+    expect(html).toContain("2,500");
   });
 
-  it("shows max for gold users", () => {
-    const html = renderTierProgress(300_000);
-    expect(html).toContain("Gold Club");
+  it("shows max for high-tier users", () => {
+    const html = renderTierProgress(10_000);
+    expect(html).toContain("highest tier");
   });
 });

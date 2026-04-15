@@ -79,7 +79,7 @@ def join_challenge(
     if existing:
         raise HTTPException(status_code=400, detail="Already joined this challenge")
 
-    # Calculate miles club tier from previous month's steps
+    # Calculate miles club tier from previous month's average daily steps
     prior_month_start = (challenge.start_date.replace(day=1) - datetime.timedelta(days=1)).replace(day=1)
     prior_month_end = challenge.start_date.replace(day=1) - datetime.timedelta(days=1)
     prior_steps = (
@@ -92,7 +92,9 @@ def join_challenge(
         .scalar()
     )
 
-    tier = calculate_tier(prior_steps)
+    days_in_month = (prior_month_end - prior_month_start).days + 1
+    avg_daily = prior_steps / days_in_month if days_in_month > 0 else 0
+    tier = calculate_tier(avg_daily)
     participant = ChallengeParticipant(
         challenge_id=challenge_id, user_id=user.id, miles_club_tier=tier
     )

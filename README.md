@@ -16,7 +16,7 @@ A webapp for group step challenges with leaderboards, miles clubs, and a virtual
 
 - **Monthly step challenges** — compete with coworkers
 - **Fitness tracker sync** — Garmin, Strava, Fitbit (OAuth) or manual daily entry
-- **Miles Clubs** — 🥇 Gold / 🥈 Silver / 🥉 Bronze tiers based on prior month steps
+- **Miles Clubs** — tiers based on average daily steps from prior month (0–5k, 5k–10k, >10k steps/day)
 - **Leaderboard** — ranked by total steps, with miles club badges
 - **Virtual Trail Map** — collective progress along the Appalachian Trail (Leaflet.js)
 - **Card-based UI** — modern, responsive, sleek design
@@ -119,9 +119,8 @@ curl http://localhost:8000/health
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://localhost:5432/steps_challenge` |
 | `JWT_SECRET` | Secret for signing JWT tokens | `CHANGE-ME-in-production` |
 | `JWT_EXPIRE_MINUTES` | Token lifetime in minutes | `1440` (24 hours) |
-| `MILES_CLUB_GOLD` | Gold tier threshold (steps/month) | `300000` |
-| `MILES_CLUB_SILVER` | Silver tier threshold | `200000` |
-| `MILES_CLUB_BRONZE` | Bronze tier threshold | `100000` |
+| `MILES_CLUB_HIGH` | High tier threshold (avg steps/day) | `10000` |
+| `MILES_CLUB_MID` | Mid tier threshold (avg steps/day) | `5000` |
 
 ## Database Migrations
 
