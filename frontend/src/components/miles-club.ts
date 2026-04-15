@@ -25,13 +25,6 @@ export function calculateTier(
   return "low";
 }
 
-const TIER_LABELS: Record<MilesClubTier, string> = {
-  high: ">10k steps/day",
-  mid: "5k\u201310k steps/day",
-  low: "0\u20135k steps/day",
-  none: "",
-};
-
 /** Render a miles club badge. */
 export function renderMilesClubBadge(tier: MilesClubTier): string {
   const config: Record<MilesClubTier, { label: string; cssClass: string }> = {
@@ -52,21 +45,13 @@ export function renderTierProgress(
   thresholds: MilesClubThresholds = DEFAULT_THRESHOLDS,
 ): string {
   const tier = calculateTier(averageDailySteps, thresholds);
-  let nextThreshold: number;
-  let nextLabel: string;
 
-  switch (tier) {
-    case "low":
-      nextThreshold = thresholds.mid;
-      nextLabel = "5k\u201310k steps/day";
-      break;
-    case "mid":
-      nextThreshold = thresholds.high;
-      nextLabel = ">10k steps/day";
-      break;
-    case "high":
-      return `<div class="tier-progress">You've reached the highest tier!</div>`;
+  if (tier === "high") {
+    return `<div class="tier-progress">You've reached the highest tier!</div>`;
   }
+
+  const nextThreshold = tier === "low" ? thresholds.mid : thresholds.high;
+  const nextLabel = tier === "low" ? "5k\u201310k steps/day" : ">10k steps/day";
 
   const pct = Math.min((averageDailySteps / nextThreshold) * 100, 100).toFixed(1);
   return `
