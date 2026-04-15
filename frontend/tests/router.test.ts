@@ -2,7 +2,7 @@
  * Tests for the client-side router.
  */
 import { describe, it, expect, beforeEach } from "vitest";
-import { addRoute, currentRoute, navigate } from "../src/router";
+import { currentRoute, navigate } from "../src/router";
 
 describe("Router", () => {
   beforeEach(() => {

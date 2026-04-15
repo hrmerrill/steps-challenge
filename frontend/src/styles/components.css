@@ -23,8 +23,30 @@
 
 .nav-links {
   display: flex;
+  align-items: center;
   gap: var(--space-md);
   list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-links a:not(.btn),
+.nav-user {
+  color: var(--color-text-muted);
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: color 0.15s ease;
+}
+
+.nav-links a:not(.btn):hover {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.nav-user {
+  color: var(--color-text);
+  font-weight: 600;
+  margin-right: var(--space-xs);
 }
 
 /* --- Buttons --- */

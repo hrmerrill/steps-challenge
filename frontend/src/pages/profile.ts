@@ -4,7 +4,6 @@
 
 import { getCurrentUser, isAuthenticated } from "../auth";
 import { navigate } from "../router";
-import { renderMilesClubBadge, calculateTier } from "../components/miles-club";
 import { apiFetch } from "../api";
 
 export async function renderProfile(container: HTMLElement): Promise<void> {
@@ -26,11 +25,27 @@ export async function renderProfile(container: HTMLElement): Promise<void> {
           <strong>Email:</strong> ${user?.email ?? "Unknown"}
         </div>
         <div style="margin-bottom: var(--space-lg);">
-          <strong>Connected Trackers:</strong>
-          ${user?.garmin_connected ? "🟢 Garmin" : ""}
-          ${user?.strava_connected ? "🟠 Strava" : ""}
-          ${user?.fitbit_connected ? "🔵 Fitbit" : ""}
-          ${!user?.garmin_connected && !user?.strava_connected && !user?.fitbit_connected ? "<span style='color: var(--color-text-muted)'>None — enter steps manually</span>" : ""}
+          <strong style="display: block; margin-bottom: var(--space-sm);">Connected Trackers:</strong>
+          <div style="margin-bottom: var(--space-md);">
+            ${user?.garmin_connected ? "🟢 Garmin " : ""}
+            ${user?.strava_connected ? "🟠 Strava " : ""}
+            ${user?.fitbit_connected ? "🔵 Fitbit " : ""}
+            ${!user?.garmin_connected && !user?.strava_connected && !user?.fitbit_connected ? "<span style='color: var(--color-text-muted)'>None — enter steps manually</span>" : ""}
+          </div>
+          
+          ${(!user?.garmin_connected || !user?.strava_connected || !user?.fitbit_connected) ? `
+          <div style="margin-top: var(--space-md); padding-top: var(--space-md); border-top: 1px solid var(--color-border);">
+            <p style="font-size: 0.875rem; font-weight: 500; margin-bottom: var(--space-sm);">Connect a Tracker</p>
+            <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
+              ${!user?.garmin_connected ? `<button class="btn btn-secondary" style="font-size: 0.875rem; padding: 0.25rem 0.5rem;" disabled title="Coming soon">🟢 Garmin</button>` : ''}
+              ${!user?.strava_connected ? `<button class="btn btn-secondary" style="font-size: 0.875rem; padding: 0.25rem 0.5rem;" disabled title="Coming soon">🟠 Strava</button>` : ''}
+              ${!user?.fitbit_connected ? `<button class="btn btn-secondary" style="font-size: 0.875rem; padding: 0.25rem 0.5rem;" disabled title="Coming soon">🔵 Fitbit</button>` : ''}
+            </div>
+            <p style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: var(--space-xs);">
+              Provider sync coming soon — enter steps manually for now.
+            </p>
+          </div>
+          ` : ''}
         </div>
         <div id="profile-stats"></div>
       </div>

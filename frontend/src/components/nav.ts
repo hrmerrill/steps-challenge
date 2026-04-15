@@ -11,12 +11,12 @@ export function renderNav(container: HTMLElement): void {
 
   container.innerHTML = `
     <nav class="nav">
-      <a href="#/" class="nav-brand">🚶 Steps Challenge</a>
+      <a href="#/" class="nav-brand">Steps Challenge</a>
       <ul class="nav-links">
         ${authed ? `
           <li><a href="#/">Dashboard</a></li>
           <li><a href="#/log">Log Steps</a></li>
-          <li><span class="nav-user">${user?.display_name ?? "User"}</span></li>
+          <li><a href="#/profile" class="nav-user">${user?.display_name ?? "User"}</a></li>
           <li><button class="btn btn-secondary" id="logout-btn">Logout</button></li>
         ` : `
           <li><a href="#/login">Login</a></li>

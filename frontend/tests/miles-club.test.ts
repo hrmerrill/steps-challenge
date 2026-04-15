@@ -6,7 +6,6 @@ import {
   calculateTier,
   renderMilesClubBadge,
   renderTierProgress,
-  DEFAULT_THRESHOLDS,
 } from "../src/components/miles-club";
 
 describe("calculateTier", () => {

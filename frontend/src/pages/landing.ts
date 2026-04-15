@@ -5,14 +5,13 @@
 import { renderLeaderboard } from "../components/leaderboard";
 import { renderTrailMap } from "../components/trail-map";
 import { renderStepChart, DayData } from "../components/step-chart";
-import { renderMilesClubBadge, calculateTier } from "../components/miles-club";
 import { apiFetch } from "../api";
-import { isAuthenticated, getCurrentUser } from "../auth";
+import { isAuthenticated } from "../auth";
 
 export async function renderLanding(container: HTMLElement): Promise<void> {
   container.innerHTML = `
     <div class="container" style="padding-top: var(--space-xl);">
-      <h1 style="margin-bottom: var(--space-lg);">🚶 Steps Challenge Dashboard</h1>
+      <h1 style="margin-bottom: var(--space-lg);">Steps Challenge Dashboard</h1>
       <div class="card-grid--wide" style="display: grid; gap: var(--space-lg);">
         <div id="trail-section"></div>
         <div class="card-grid">
