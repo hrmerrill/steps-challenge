@@ -11,7 +11,7 @@ export function renderNav(container: HTMLElement): void {
 
   container.innerHTML = `
     <nav class="nav">
-      <a href="#/" class="nav-brand">Steps Challenge</a>
+      <a href="#/" class="nav-brand">Carbon Steps Challenge</a>
       <ul class="nav-links">
         ${authed ? `
           <li><a href="#/">Dashboard</a></li>
