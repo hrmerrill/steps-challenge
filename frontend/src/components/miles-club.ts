@@ -30,16 +30,16 @@ export function calculateTier(
 
 /** Render a miles club badge. */
 export function renderMilesClubBadge(tier: MilesClubTier): string {
-  const config: Record<MilesClubTier, { emoji: string; label: string; cssClass: string }> = {
-    gold: { emoji: "🥇", label: "Gold Club", cssClass: "badge--gold" },
-    silver: { emoji: "🥈", label: "Silver Club", cssClass: "badge--silver" },
-    bronze: { emoji: "🥉", label: "Bronze Club", cssClass: "badge--bronze" },
-    none: { emoji: "", label: "", cssClass: "" },
+  const config: Record<MilesClubTier, { label: string; cssClass: string }> = {
+    gold: { label: "Gold Club", cssClass: "badge--gold" },
+    silver: { label: "Silver Club", cssClass: "badge--silver" },
+    bronze: { label: "Bronze Club", cssClass: "badge--bronze" },
+    none: { label: "", cssClass: "" },
   };
 
   const c = config[tier];
   if (!c.label) return "";
-  return `<span class="badge ${c.cssClass}">${c.emoji} ${c.label}</span>`;
+  return `<span class="badge ${c.cssClass}">${c.label}</span>`;
 }
 
 /** Render a progress bar toward the next tier. */
@@ -65,7 +65,7 @@ export function renderTierProgress(
       nextLabel = "Gold";
       break;
     case "gold":
-      return `<div class="tier-progress">🥇 You've reached Gold Club!</div>`;
+      return `<div class="tier-progress">You've reached Gold Club!</div>`;
   }
 
   const pct = Math.min((steps / nextThreshold) * 100, 100).toFixed(1);

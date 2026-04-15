@@ -19,6 +19,12 @@ async function boot(): Promise<void> {
   const appEl = document.getElementById("app");
   if (!appEl) return;
 
+  // Restore saved theme preference
+  const saved = localStorage.getItem("theme");
+  if (saved === "dark" || saved === "light") {
+    document.documentElement.setAttribute("data-theme", saved);
+  }
+
   // Layout: nav + content
   appEl.innerHTML = `
     <div id="nav-container"></div>

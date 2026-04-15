@@ -21,7 +21,7 @@ describe("tierBadgeHtml", () => {
   it("returns gold badge HTML", () => {
     const html = tierBadgeHtml("gold");
     expect(html).toContain("badge--gold");
-    expect(html).toContain("🥇");
+    expect(html).toContain("Gold");
   });
 
   it("returns silver badge HTML", () => {

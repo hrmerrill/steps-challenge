@@ -70,23 +70,23 @@ function daysUntil(dateStr: string): number {
 
 function renderStatusBanner(challenge: Challenge): string {
   const status = getChallengeStatus(challenge);
-  const infoBtn = `<button class="how-it-works-toggle" id="how-it-works-btn" title="How It Works">ℹ️ How It Works</button>`;
+  const infoBtn = `<button class="how-it-works-toggle" id="how-it-works-btn" title="How It Works">How It Works</button>`;
   if (status === "upcoming") {
     const days = daysUntil(challenge.start_date);
     return `<div class="challenge-status challenge-status--upcoming">
-      <span>⏳ <strong>${challenge.name}</strong> starts in ${days} day${days === 1 ? "" : "s"} (${challenge.start_date})</span>
+      <span><strong>${challenge.name}</strong> starts in ${days} day${days === 1 ? "" : "s"} (${challenge.start_date})</span>
       ${infoBtn}
     </div>`;
   }
   if (status === "active") {
     const daysLeft = daysUntil(challenge.end_date);
     return `<div class="challenge-status challenge-status--active">
-      <span>🟢 <strong>${challenge.name}</strong> is underway — ${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining</span>
+      <span><strong>${challenge.name}</strong> is underway — ${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining</span>
       ${infoBtn}
     </div>`;
   }
   return `<div class="challenge-status challenge-status--ended">
-    <span>✅ <strong>${challenge.name}</strong> has ended (${challenge.start_date} – ${challenge.end_date})</span>
+    <span><strong>${challenge.name}</strong> has ended (${challenge.start_date} – ${challenge.end_date})</span>
     ${infoBtn}
   </div>`;
 }
@@ -107,35 +107,35 @@ function renderHowItWorks(challenge: Challenge): string {
     <div class="how-it-works-card" id="how-it-works-card" style="display: none;">
       <div class="card">
         <div class="card-header" style="display: flex; align-items: center; justify-content: space-between;">
-          <h3 class="card-title">📖 How It Works</h3>
+          <h3 class="card-title">How It Works</h3>
           <button class="how-it-works-close" id="how-it-works-close" title="Close">&times;</button>
         </div>
         <div style="padding: 0 var(--space-lg) var(--space-lg);">
           ${descriptionHtml}
           <div class="how-it-works-section">
-            <h4>📅 Challenge Period</h4>
+            <h4>Challenge Period</h4>
             <p>This challenge runs from <strong>${start}</strong> to <strong>${end}</strong>. Only steps logged during this window count toward the leaderboard and trail progress.</p>
           </div>
           <div class="how-it-works-section">
-            <h4>🏅 Miles Clubs</h4>
+            <h4>Miles Clubs</h4>
             <p>When you join, you're placed into a tier based on your <strong>total steps from the previous month</strong>:</p>
             <ul class="how-it-works-tiers">
-              <li><span class="badge badge--gold">🥇 Gold</span> 300,000+ steps/month</li>
-              <li><span class="badge badge--silver">🥈 Silver</span> 200,000+ steps/month</li>
-              <li><span class="badge badge--bronze">🥉 Bronze</span> 100,000+ steps/month</li>
+              <li><span class="badge badge--gold">Gold</span> 300,000+ steps/month</li>
+              <li><span class="badge badge--silver">Silver</span> 200,000+ steps/month</li>
+              <li><span class="badge badge--bronze">Bronze</span> 100,000+ steps/month</li>
             </ul>
             <p>Tiers create fair competition groups so everyone can compete with peers at a similar activity level.</p>
           </div>
           <div class="how-it-works-section">
-            <h4>🗺️ Virtual Trail Map</h4>
+            <h4>Virtual Trail Map</h4>
             <p>The group's collective steps are converted to miles (<strong>2,000 steps = 1 mile</strong>) and plotted on the <strong>Appalachian Trail</strong> (2,190 miles). Watch the group advance together!</p>
           </div>
           <div class="how-it-works-section">
-            <h4>🏆 Leaderboard</h4>
+            <h4>Leaderboard</h4>
             <p>Individual participants are ranked by total steps. Your personal miles and daily averages are tracked so you can see your progress over time.</p>
           </div>
           <div class="how-it-works-section">
-            <h4>📝 Logging Steps</h4>
+            <h4>Logging Steps</h4>
             <p>Log steps manually each day, or sync from <strong>Garmin</strong>, <strong>Strava</strong>, or <strong>Fitbit</strong>. You can edit or delete manual entries anytime from the Log Steps page.</p>
           </div>
         </div>
@@ -146,9 +146,9 @@ function renderHowItWorks(challenge: Challenge): string {
 
 function renderStatsCard(container: HTMLElement, stats: UserChallengeStats): void {
   const tierLabels: Record<string, string> = {
-    gold: "🥇 Gold",
-    silver: "🥈 Silver",
-    bronze: "🥉 Bronze",
+    gold: "Gold",
+    silver: "Silver",
+    bronze: "Bronze",
     none: "—",
   };
   const tierLabel = tierLabels[stats.miles_club_tier] ?? "—";
@@ -156,7 +156,7 @@ function renderStatsCard(container: HTMLElement, stats: UserChallengeStats): voi
   container.innerHTML = `
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">📊 Your Stats</h3>
+        <h3 class="card-title">Your Stats</h3>
         <span class="card-subtitle">Rank ${stats.rank} of ${stats.total_participants}</span>
       </div>
       <div class="stats-grid">
@@ -189,7 +189,7 @@ function renderOverallStatsCard(container: HTMLElement, stats: OverallUserStats)
   container.innerHTML = `
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">📊 All-Time Stats</h3>
+        <h3 class="card-title">All-Time Stats</h3>
         <span class="card-subtitle">Rank ${stats.rank} of ${stats.total_users}</span>
       </div>
       <div class="stats-grid">
@@ -249,7 +249,7 @@ async function renderChallengeView(
   const options = challenges
     .map((c) => {
       const selected = c.id === challenge.id ? "selected" : "";
-      const tag = getChallengeStatus(c) === "active" ? " 🟢" : getChallengeStatus(c) === "upcoming" ? " ⏳" : "";
+      const tag = getChallengeStatus(c) === "active" ? " (Active)" : getChallengeStatus(c) === "upcoming" ? " (Upcoming)" : "";
       return `<option value="${c.id}" ${selected}>${c.name}${tag}</option>`;
     })
     .join("");
@@ -329,7 +329,7 @@ async function renderChallengeView(
       : `<strong>${challenge.name}</strong> is underway! Join the challenge to start tracking your steps.`;
     joinSection.innerHTML = `
       <div class="join-banner">
-        <p>🏃 ${actionText}</p>
+        <p>${actionText}</p>
         <button class="btn btn-primary" id="join-btn">Join Challenge</button>
       </div>
     `;
@@ -375,7 +375,7 @@ async function renderOverallView(
 
   const options = challenges
     .map((c) => {
-      const tag = getChallengeStatus(c) === "active" ? " 🟢" : getChallengeStatus(c) === "upcoming" ? " ⏳" : "";
+      const tag = getChallengeStatus(c) === "active" ? " (Active)" : getChallengeStatus(c) === "upcoming" ? " (Upcoming)" : "";
       return `<option value="${c.id}">${c.name}${tag}</option>`;
     })
     .join("");

@@ -66,7 +66,7 @@ export async function renderTrailMap(
     container.innerHTML = `
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">🗺️ ${progress.trail_name}</h3>
+          <h3 class="card-title">${progress.trail_name}</h3>
           <span class="card-subtitle">${progress.total_group_miles.toLocaleString()} mi / ${progress.trail_length_miles.toLocaleString()} mi (${progress.progress_percent}%)</span>
         </div>
         <div id="trail-map" style="height: 400px; border-radius: var(--radius-md);"></div>
@@ -82,9 +82,9 @@ export async function renderTrailMap(
     }
 
     const map = L.map("trail-map").setView([39.0, -77.5], 5);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-      maxZoom: 18,
+    L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+      attribution: '© <a href="https://opentopomap.org">OpenTopoMap</a> contributors',
+      maxZoom: 17,
     }).addTo(map);
 
     // Draw trail polyline

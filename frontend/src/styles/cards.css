@@ -8,11 +8,31 @@
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--color-border);
   padding: var(--space-lg);
-  transition: box-shadow 0.2s ease;
+  transition: box-shadow 0.3s ease, transform 0.3s ease;
+  animation: cardFloat 6s ease-in-out infinite;
 }
 
 .card:hover {
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* Stagger card animations so they drift slightly out of phase */
+.card:nth-child(2n) {
+  animation-delay: -2s;
+}
+
+.card:nth-child(3n) {
+  animation-delay: -4s;
+}
+
+@keyframes cardFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
 }
 
 .card-header {
@@ -25,7 +45,7 @@
 .card-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: var(--color-heading);
 }
 
 .card-subtitle {

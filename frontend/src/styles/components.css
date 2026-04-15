@@ -116,6 +116,8 @@
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
   transition: border-color 0.15s ease;
 }
 
@@ -183,7 +185,7 @@
 .stat-value {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--color-primary);
+  color: var(--color-heading-accent);
   font-variant-numeric: tabular-nums;
 }
 
@@ -311,6 +313,7 @@
   font-size: 0.875rem;
   font-family: inherit;
   background: var(--color-surface);
+  color: var(--color-text);
   cursor: pointer;
   min-width: 200px;
 }

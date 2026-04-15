@@ -80,7 +80,7 @@ export function renderLogSteps(container: HTMLElement): void {
       </div>
 
       <div class="card" style="margin-top: var(--space-lg);">
-        <div class="card-header"><h3 class="card-title">📝 Step History</h3></div>
+        <div class="card-header"><h3 class="card-title">Step History</h3></div>
         <div id="step-history">Loading…</div>
       </div>
     </div>
@@ -123,7 +123,7 @@ export function renderLogSteps(container: HTMLElement): void {
         body: { date, step_count: stepCount, source: "manual" },
       });
       const verb = editingDate ? "Updated" : "Logged";
-      successEl.textContent = `✅ ${verb} ${stepCount.toLocaleString()} steps for ${formatDate(date)}`;
+      successEl.textContent = `${verb} ${stepCount.toLocaleString()} steps for ${formatDate(date)}`;
       successEl.style.display = "block";
       resetForm();
       await loadHistory(historyEl);

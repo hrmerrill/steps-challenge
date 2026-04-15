@@ -14,9 +14,9 @@ export interface LeaderboardEntry {
 }
 
 const TIER_BADGE: Record<string, { label: string; class: string }> = {
-  gold: { label: "🥇 Gold", class: "badge--gold" },
-  silver: { label: "🥈 Silver", class: "badge--silver" },
-  bronze: { label: "🥉 Bronze", class: "badge--bronze" },
+  gold: { label: "Gold", class: "badge--gold" },
+  silver: { label: "Silver", class: "badge--silver" },
+  bronze: { label: "Bronze", class: "badge--bronze" },
   none: { label: "", class: "" },
 };
 
@@ -73,7 +73,7 @@ export async function renderLeaderboard(
 
     container.innerHTML = `
       <div class="card">
-        <div class="card-header"><h3 class="card-title">🏆 Leaderboard</h3></div>
+        <div class="card-header"><h3 class="card-title">Leaderboard</h3></div>
         ${rows}
       </div>
     `;

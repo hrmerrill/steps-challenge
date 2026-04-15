@@ -39,9 +39,8 @@ describe("calculateTier", () => {
 });
 
 describe("renderMilesClubBadge", () => {
-  it("renders gold badge with emoji", () => {
+  it("renders gold badge", () => {
     const html = renderMilesClubBadge("gold");
-    expect(html).toContain("🥇");
     expect(html).toContain("Gold Club");
     expect(html).toContain("badge--gold");
   });

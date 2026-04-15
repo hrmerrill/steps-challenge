@@ -36,9 +36,9 @@ export function renderRegister(container: HTMLElement): void {
             Sync your steps automatically. You can also enter steps manually.
           </p>
           <div style="display: flex; gap: var(--space-sm); flex-wrap: wrap;">
-            <button class="btn btn-secondary" disabled title="Coming soon">🟢 Garmin</button>
-            <button class="btn btn-secondary" disabled title="Coming soon">🟠 Strava</button>
-            <button class="btn btn-secondary" disabled title="Coming soon">🔵 Fitbit</button>
+            <button class="btn btn-secondary" disabled title="Coming soon">Garmin</button>
+            <button class="btn btn-secondary" disabled title="Coming soon">Strava</button>
+            <button class="btn btn-secondary" disabled title="Coming soon">Fitbit</button>
           </div>
           <p style="font-size: 0.75rem; color: var(--color-text-muted); margin-top: var(--space-xs);">
             Provider sync coming soon — enter steps manually for now.
