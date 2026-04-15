@@ -54,6 +54,10 @@ export async function apiFetch<T = unknown>(
     throw new ApiError(resp.status, errorBody.detail ?? resp.statusText);
   }
 
+  if (resp.status === 204) {
+    return undefined as T;
+  }
+
   return resp.json() as Promise<T>;
 }
 
