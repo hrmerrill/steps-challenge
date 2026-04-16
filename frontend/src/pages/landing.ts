@@ -23,30 +23,6 @@ interface Membership {
   miles_club_tier: string | null;
 }
 
-interface UserChallengeStats {
-  user_id: number;
-  display_name: string;
-  challenge_id: number;
-  total_steps: number;
-  total_miles: number;
-  rank: number;
-  total_participants: number;
-  days_logged: number;
-  average_daily: number;
-  miles_club_tier: string;
-}
-
-interface OverallUserStats {
-  user_id: number;
-  display_name: string;
-  total_steps: number;
-  total_miles: number;
-  rank: number;
-  total_users: number;
-  days_logged: number;
-  average_daily: number;
-}
-
 interface TeamChallengeStats {
   challenge_id: number;
   total_steps: number;
