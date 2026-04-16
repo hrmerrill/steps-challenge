@@ -15,6 +15,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ""),
       },
+      // Proxy uploaded files (profile photos, etc.) to the backend
+      "/uploads": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+      },
     },
   },
 });
