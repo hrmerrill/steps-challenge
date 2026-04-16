@@ -13,7 +13,7 @@ from app.models.steps import DailySteps
 from app.models.user import User
 from app.schemas.challenge import ChallengeCreate, ChallengeResponse, ChallengeMembership, TeamChallengeStats, UserChallengeStats
 from app.services.auth import get_current_user
-from app.services.miles_clubs import calculate_tier
+from app.services.miles_clubs import calculate_tier, get_user_tier
 from app.services.trail import steps_to_miles
 
 router = APIRouter(prefix="/challenges", tags=["challenges"])
@@ -123,7 +123,8 @@ def get_membership(
         .first()
     )
     if participant:
-        return ChallengeMembership(joined=True, miles_club_tier=participant.miles_club_tier)
+        tier, _ = get_user_tier(user.id, db, reference_date=challenge.start_date)
+        return ChallengeMembership(joined=True, miles_club_tier=tier)
     return ChallengeMembership(joined=False)
 
 
@@ -242,6 +243,8 @@ def get_my_stats(
 
     avg_daily = round(total_steps / days_logged, 1) if days_logged > 0 else 0.0
 
+    tier, _ = get_user_tier(user.id, db, reference_date=challenge.start_date)
+
     return UserChallengeStats(
         user_id=user.id,
         display_name=user.display_name,
@@ -252,5 +255,5 @@ def get_my_stats(
         total_participants=total_participants,
         days_logged=days_logged,
         average_daily=avg_daily,
-        miles_club_tier=participant.miles_club_tier,
+        miles_club_tier=tier,
     )

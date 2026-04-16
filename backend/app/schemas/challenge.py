@@ -86,6 +86,8 @@ class OverallUserStats(BaseModel):
     total_users: int
     days_logged: int
     average_daily: float
+    miles_club_tier: MilesClubTier = MilesClubTier.NONE
+    miles_club_average_daily: float = 0.0
 
 
 class TeamChallengeStats(BaseModel):

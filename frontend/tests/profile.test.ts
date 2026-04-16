@@ -90,6 +90,7 @@ describe("profile page", () => {
         return {
           user_id: 1, display_name: "Test User", total_steps: 300_000,
           total_miles: 150, rank: 1, total_users: 5, days_logged: 30, average_daily: 12_000,
+          miles_club_tier: "high", miles_club_average_daily: 12_000,
         };
       }
       if (path === "/challenges/") return [];
@@ -115,6 +116,7 @@ describe("profile page", () => {
         return {
           user_id: 1, display_name: "Test User", total_steps: 150_000,
           total_miles: 75, rank: 2, total_users: 5, days_logged: 30, average_daily: 7_500,
+          miles_club_tier: "mid", miles_club_average_daily: 7_500,
         };
       }
       if (path === "/challenges/") return [];
@@ -139,6 +141,7 @@ describe("profile page", () => {
         return {
           user_id: 1, display_name: "Test User", total_steps: 30_000,
           total_miles: 15, rank: 3, total_users: 5, days_logged: 30, average_daily: 2_000,
+          miles_club_tier: "low", miles_club_average_daily: 2_000,
         };
       }
       if (path === "/challenges/") return [];
@@ -163,6 +166,7 @@ describe("profile page", () => {
         return {
           user_id: 1, display_name: "Test User", total_steps: 300_000,
           total_miles: 150, rank: 2, total_users: 10, days_logged: 30, average_daily: 10_000,
+          miles_club_tier: "high", miles_club_average_daily: 10_000,
         };
       }
       if (path === "/challenges/") return [];
@@ -190,6 +194,7 @@ describe("profile page", () => {
         return {
           user_id: 1, display_name: "Test User", total_steps: 100_000,
           total_miles: 50, rank: 1, total_users: 1, days_logged: 20, average_daily: 5_000,
+          miles_club_tier: "mid", miles_club_average_daily: 5_000,
         };
       }
       if (path === "/challenges/") {

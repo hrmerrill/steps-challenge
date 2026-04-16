@@ -5,7 +5,7 @@
 import { getCurrentUser, isAuthenticated, fetchMe } from "../auth";
 import { navigate } from "../router";
 import { apiFetch, apiUpload } from "../api";
-import { calculateTier, renderMilesClubBadge } from "../components/miles-club";
+import { renderMilesClubBadge, MilesClubTier } from "../components/miles-club";
 import { renderStepChart, DayData } from "../components/step-chart";
 
 interface Challenge {
@@ -45,6 +45,8 @@ interface OverallUserStats {
   total_users: number;
   days_logged: number;
   average_daily: number;
+  miles_club_tier: string;
+  miles_club_average_daily: number;
 }
 
 function formatNumber(n: number): string {
@@ -161,9 +163,10 @@ export async function renderProfile(container: HTMLElement): Promise<void> {
       apiFetch<OverallUserStats>("/leaderboard/overall/my-stats"),
     ]);
 
-    const tier = calculateTier(summary.average_daily);
+    const tier = overallStats.miles_club_tier as MilesClubTier;
+    const tierAvg = overallStats.miles_club_average_daily;
     const tierEl = document.getElementById("profile-tier")!;
-    tierEl.innerHTML = `${renderMilesClubBadge(tier)} (${summary.average_daily.toLocaleString()} steps/day)`;
+    tierEl.innerHTML = `${renderMilesClubBadge(tier)} (${tierAvg.toLocaleString()} steps/day avg last month)`;
 
     document.getElementById("profile-stats")!.innerHTML = `
       <h3 style="margin-bottom: var(--space-sm);">Your All-Time Stats</h3>

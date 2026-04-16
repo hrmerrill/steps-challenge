@@ -10,6 +10,7 @@ from app.models.steps import DailySteps
 from app.models.user import User
 from app.schemas.challenge import LeaderboardEntry, OverallTeamStats, OverallUserStats, TrailProgress
 from app.services.auth import get_current_user
+from app.services.miles_clubs import get_bulk_user_tiers, get_user_tier
 from app.services.trail import calculate_trail_progress, steps_to_miles
 
 router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
@@ -35,13 +36,16 @@ def get_overall_leaderboard(db: Session = Depends(get_db)):
         .all()
     )
 
+    user_ids = [row[0] for row in results]
+    tiers = get_bulk_user_tiers(user_ids, db)
+
     return [
         LeaderboardEntry(
             rank=i + 1,
             user_id=row[0],
             display_name=row[1],
             profile_photo_url=row[2],
-            miles_club_tier=MilesClubTier.NONE,
+            miles_club_tier=tiers.get(row[0], MilesClubTier.NONE),
             total_steps=row[3],
             total_miles=steps_to_miles(row[3]),
         )
@@ -129,6 +133,8 @@ def get_overall_my_stats(
 
     avg_daily = round(total_steps / days_logged, 1) if days_logged > 0 else 0.0
 
+    tier, tier_avg = get_user_tier(user.id, db)
+
     return OverallUserStats(
         user_id=user.id,
         display_name=user.display_name,
@@ -138,6 +144,8 @@ def get_overall_my_stats(
         total_users=total_users,
         days_logged=days_logged,
         average_daily=avg_daily,
+        miles_club_tier=tier,
+        miles_club_average_daily=tier_avg,
     )
 
 
@@ -157,7 +165,6 @@ def get_leaderboard(challenge_id: int = Path(gt=0), db: Session = Depends(get_db
             User.id,
             User.display_name,
             User.profile_photo_url,
-            ChallengeParticipant.miles_club_tier,
             func.coalesce(func.sum(DailySteps.step_count), 0).label("total_steps"),
         )
         .join(ChallengeParticipant, ChallengeParticipant.user_id == User.id)
@@ -168,10 +175,14 @@ def get_leaderboard(challenge_id: int = Path(gt=0), db: Session = Depends(get_db
             & (DailySteps.date <= challenge.end_date),
         )
         .filter(ChallengeParticipant.challenge_id == challenge_id)
-        .group_by(User.id, User.display_name, User.profile_photo_url, ChallengeParticipant.miles_club_tier)
+        .group_by(User.id, User.display_name, User.profile_photo_url)
         .order_by(func.coalesce(func.sum(DailySteps.step_count), 0).desc())
         .all()
     )
+
+    # Compute tiers from the month before the challenge started
+    user_ids = [row[0] for row in results]
+    tiers = get_bulk_user_tiers(user_ids, db, reference_date=challenge.start_date)
 
     return [
         LeaderboardEntry(
@@ -179,9 +190,9 @@ def get_leaderboard(challenge_id: int = Path(gt=0), db: Session = Depends(get_db
             user_id=row[0],
             display_name=row[1],
             profile_photo_url=row[2],
-            miles_club_tier=row[3],
-            total_steps=row[4],
-            total_miles=steps_to_miles(row[4]),
+            miles_club_tier=tiers.get(row[0], MilesClubTier.NONE),
+            total_steps=row[3],
+            total_miles=steps_to_miles(row[3]),
         )
         for i, row in enumerate(results)
     ]

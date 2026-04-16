@@ -105,6 +105,27 @@ class TestLeaderboard:
         assert board[0]["rank"] == 1
         assert board[1]["rank"] == 2
 
+    def test_leaderboard_tiers_from_prior_month(self, client):
+        """Miles club tier on leaderboard is computed from the prior month, not stored at join."""
+        h = _register_and_get_header(client, "tiertest@test.com", "TierUser")
+
+        # Log steps in February (prior month for March challenge)
+        for day in range(1, 29):
+            client.post(
+                "/steps/",
+                json={"date": f"2026-02-{day:02d}", "step_count": 8_000},
+                headers=h,
+            )
+
+        ch_id = _create_challenge(client, h)  # March challenge
+        client.post(f"/challenges/{ch_id}/join", headers=h)
+
+        resp = client.get(f"/leaderboard/{ch_id}")
+        assert resp.status_code == 200
+        board = resp.json()
+        assert len(board) == 1
+        assert board[0]["miles_club_tier"] == "mid"
+
     def test_leaderboard_nonexistent(self, client):
         resp = client.get("/leaderboard/9999")
         assert resp.status_code == 404
@@ -184,6 +205,9 @@ class TestOverallMyStats:
         assert body["average_daily"] == 10000.0
         assert body["rank"] == 1
         assert body["total_users"] >= 1
+        # miles_club_tier should be present
+        assert "miles_club_tier" in body
+        assert "miles_club_average_daily" in body
 
     def test_overall_my_stats_no_steps(self, client):
         h = _register_and_get_header(client, "omsn@test.com", "NoSteps")
@@ -193,6 +217,25 @@ class TestOverallMyStats:
         assert body["total_steps"] == 0
         assert body["days_logged"] == 0
         assert body["rank"] == 1
+        assert body["miles_club_tier"] == "low"
+
+    def test_overall_my_stats_tier_from_prior_month(self, client):
+        """Miles club tier in overall/my-stats reflects prior month avg."""
+        h = _register_and_get_header(client, "omst@test.com", "TierStat")
+        today = datetime.date.today()
+        prior_start = (today.replace(day=1) - datetime.timedelta(days=1)).replace(day=1)
+        # Log 7k steps/day for each day of last month
+        day = prior_start
+        end = today.replace(day=1) - datetime.timedelta(days=1)
+        while day <= end:
+            client.post("/steps/", json={"date": day.isoformat(), "step_count": 7_000}, headers=h)
+            day += datetime.timedelta(days=1)
+
+        resp = client.get("/leaderboard/overall/my-stats", headers=h)
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["miles_club_tier"] == "mid"
+        assert body["miles_club_average_daily"] == 7_000.0
 
     def test_overall_my_stats_rank(self, client):
         h1 = _register_and_get_header(client, "omr1@test.com", "Leader")
@@ -225,6 +268,19 @@ class TestMembership:
         body = resp.json()
         assert body["joined"] is True
         assert body["miles_club_tier"] is not None
+
+    def test_membership_tier_reflects_prior_month(self, client):
+        """Membership tier is dynamically computed from the prior month."""
+        h = _register_and_get_header(client, "memtier@test.com", "MemTier")
+        # Log 8k/day in February (prior month for March challenge)
+        for day in range(1, 29):
+            client.post("/steps/", json={"date": f"2026-02-{day:02d}", "step_count": 8_000}, headers=h)
+
+        ch_id = _create_challenge(client, h)
+        client.post(f"/challenges/{ch_id}/join", headers=h)
+        resp = client.get(f"/challenges/{ch_id}/membership", headers=h)
+        assert resp.status_code == 200
+        assert resp.json()["miles_club_tier"] == "mid"
 
     def test_membership_nonexistent_challenge(self, client):
         h = _register_and_get_header(client, "ghost2@test.com", "Ghost2")
