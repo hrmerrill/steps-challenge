@@ -118,6 +118,13 @@ describe("landing page", () => {
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [ACTIVE_CHALLENGE];
       if (path === "/challenges/1/membership") return { joined: false, miles_club_tier: null };
+      if (path === "/challenges/1/team-stats") {
+        return {
+          challenge_id: 1, total_steps: 0, total_miles: 0,
+          total_participants: 0, total_days_logged: 0,
+          average_daily_per_participant: 0,
+        };
+      }
       if (path.startsWith("/leaderboard/")) return [];
       return [];
     });
@@ -130,41 +137,45 @@ describe("landing page", () => {
     expect(joinBtn!.textContent).toBe("Join Challenge");
   });
 
-  it("shows stats card when user has joined with steps", async () => {
-    mockIsAuth.mockReturnValue(true);
-    mockGetUser.mockReturnValue(TEST_USER);
+  it("shows team stats card for challenge (no auth required)", async () => {
+    mockIsAuth.mockReturnValue(false);
+    mockGetUser.mockReturnValue(null);
 
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [ACTIVE_CHALLENGE];
-      if (path === "/challenges/1/membership") return { joined: true, miles_club_tier: "mid" };
-      if (path === "/challenges/1/my-stats") {
+      if (path === "/challenges/1/team-stats") {
         return {
-          user_id: 1, display_name: "Test", challenge_id: 1,
-          total_steps: 50000, total_miles: 25.0, rank: 2,
-          total_participants: 5, days_logged: 10, average_daily: 5000.0,
-          miles_club_tier: "mid",
+          challenge_id: 1, total_steps: 150000, total_miles: 75.0,
+          total_participants: 5, total_days_logged: 30,
+          average_daily_per_participant: 5000.0,
         };
       }
       if (path.startsWith("/leaderboard/")) return [];
-      if (path.startsWith("/steps/")) return [];
       return [];
     });
 
     const { renderLanding } = await import("../src/pages/landing");
     await renderLanding(container);
 
-    expect(container.innerHTML).toContain("Your Stats");
-    expect(container.innerHTML).toContain("50,000");
-    expect(container.innerHTML).toContain("Rank 2 of 5");
-    expect(container.querySelector("#join-btn")).toBeNull();
+    expect(container.innerHTML).toContain("Team Stats");
+    expect(container.innerHTML).toContain("150,000");
+    expect(container.innerHTML).toContain("5 participants");
+    expect(container.innerHTML).not.toContain("Your Stats");
   });
 
-  it("does not show join banner or stats for unauthenticated users", async () => {
+  it("does not show join banner for unauthenticated users but shows team stats", async () => {
     mockIsAuth.mockReturnValue(false);
     mockGetUser.mockReturnValue(null);
 
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [ACTIVE_CHALLENGE];
+      if (path === "/challenges/1/team-stats") {
+        return {
+          challenge_id: 1, total_steps: 100000, total_miles: 50.0,
+          total_participants: 3, total_days_logged: 15,
+          average_daily_per_participant: 6666.7,
+        };
+      }
       if (path.startsWith("/leaderboard/")) return [];
       return [];
     });
@@ -174,6 +185,7 @@ describe("landing page", () => {
 
     expect(container.querySelector("#join-btn")).toBeNull();
     expect(container.innerHTML).not.toContain("Your Stats");
+    expect(container.innerHTML).toContain("Team Stats");
   });
 
   it("shows message when no challenges exist", async () => {
@@ -197,6 +209,13 @@ describe("landing page", () => {
 
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [FUTURE_CHALLENGE];
+      if (path.includes("/team-stats")) {
+        return {
+          challenge_id: 2, total_steps: 0, total_miles: 0,
+          total_participants: 0, total_days_logged: 0,
+          average_daily_per_participant: 0,
+        };
+      }
       if (path.startsWith("/leaderboard/")) return [];
       return [];
     });
@@ -214,6 +233,13 @@ describe("landing page", () => {
 
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [ACTIVE_CHALLENGE];
+      if (path.includes("/team-stats")) {
+        return {
+          challenge_id: 1, total_steps: 0, total_miles: 0,
+          total_participants: 0, total_days_logged: 0,
+          average_daily_per_participant: 0,
+        };
+      }
       if (path.startsWith("/leaderboard/")) return [];
       return [];
     });
@@ -231,6 +257,13 @@ describe("landing page", () => {
 
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [ACTIVE_CHALLENGE, PAST_CHALLENGE];
+      if (path.includes("/team-stats")) {
+        return {
+          challenge_id: 1, total_steps: 0, total_miles: 0,
+          total_participants: 0, total_days_logged: 0,
+          average_daily_per_participant: 0,
+        };
+      }
       if (path.startsWith("/leaderboard/")) return [];
       return [];
     });
@@ -252,6 +285,13 @@ describe("landing page", () => {
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [PAST_CHALLENGE];
       if (path.startsWith("/challenges/3/membership")) return { joined: false, miles_club_tier: null };
+      if (path === "/challenges/3/team-stats") {
+        return {
+          challenge_id: 3, total_steps: 0, total_miles: 0,
+          total_participants: 0, total_days_logged: 0,
+          average_daily_per_participant: 0,
+        };
+      }
       if (path.startsWith("/leaderboard/")) return [];
       return [];
     });
@@ -269,6 +309,13 @@ describe("landing page", () => {
 
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [ACTIVE_CHALLENGE];
+      if (path.includes("/team-stats")) {
+        return {
+          challenge_id: 1, total_steps: 0, total_miles: 0,
+          total_participants: 0, total_days_logged: 0,
+          average_daily_per_participant: 0,
+        };
+      }
       if (path.startsWith("/leaderboard/")) return [];
       return [];
     });
@@ -287,6 +334,13 @@ describe("landing page", () => {
 
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [ACTIVE_CHALLENGE];
+      if (path.includes("/team-stats")) {
+        return {
+          challenge_id: 1, total_steps: 0, total_miles: 0,
+          total_participants: 0, total_days_logged: 0,
+          average_daily_per_participant: 0,
+        };
+      }
       if (path.startsWith("/leaderboard/")) return [];
       return [];
     });
@@ -312,6 +366,13 @@ describe("landing page", () => {
 
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/challenges/") return [ACTIVE_CHALLENGE];
+      if (path.includes("/team-stats")) {
+        return {
+          challenge_id: 1, total_steps: 0, total_miles: 0,
+          total_participants: 0, total_days_logged: 0,
+          average_daily_per_participant: 0,
+        };
+      }
       if (path.startsWith("/leaderboard/")) return [];
       return [];
     });

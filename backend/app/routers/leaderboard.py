@@ -8,7 +8,7 @@ from app.database import get_db
 from app.models.challenge import Challenge, ChallengeParticipant, MilesClubTier
 from app.models.steps import DailySteps
 from app.models.user import User
-from app.schemas.challenge import LeaderboardEntry, OverallUserStats, TrailProgress
+from app.schemas.challenge import LeaderboardEntry, OverallTeamStats, OverallUserStats, TrailProgress
 from app.services.auth import get_current_user
 from app.services.trail import calculate_trail_progress, steps_to_miles
 
@@ -57,6 +57,34 @@ def get_overall_trail_progress(
         db.query(func.coalesce(func.sum(DailySteps.step_count), 0)).scalar()
     )
     return calculate_trail_progress(total_steps, trail)
+
+
+@router.get("/overall/team-stats", response_model=OverallTeamStats)
+def get_overall_team_stats(db: Session = Depends(get_db)):
+    """Get aggregate all-time stats across all users (no auth required)."""
+    agg = (
+        db.query(
+            func.coalesce(func.sum(DailySteps.step_count), 0).label("total"),
+            func.count(DailySteps.id).label("days"),
+        )
+        .one()
+    )
+    total_steps = int(agg.total)
+    total_days = int(agg.days)
+
+    total_users = (
+        db.query(func.count(func.distinct(DailySteps.user_id))).scalar() or 0
+    )
+
+    avg_daily = round(total_steps / total_days, 1) if total_days > 0 else 0.0
+
+    return OverallTeamStats(
+        total_steps=total_steps,
+        total_miles=steps_to_miles(total_steps),
+        total_users=total_users,
+        total_days_logged=total_days,
+        average_daily_per_user=avg_daily,
+    )
 
 
 @router.get("/overall/my-stats", response_model=OverallUserStats)

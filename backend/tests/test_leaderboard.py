@@ -287,3 +287,63 @@ class TestMyStats:
         h = _register_and_get_header(client, "noexist@test.com", "NoExist")
         resp = client.get("/challenges/9999/my-stats", headers=h)
         assert resp.status_code == 404
+
+
+class TestTeamChallengeStats:
+    def test_team_stats_no_auth_required(self, client):
+        h = _register_and_get_header(client, "team1@test.com", "Creator")
+        ch_id = _create_challenge(client, h)
+        resp = client.get(f"/challenges/{ch_id}/team-stats")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total_steps"] == 0
+        assert body["total_participants"] == 0
+        assert body["total_miles"] == 0.0
+
+    def test_team_stats_with_participants(self, client):
+        h1 = _register_and_get_header(client, "team2@test.com", "Alice")
+        h2 = _register_and_get_header(client, "team3@test.com", "Bob")
+        ch_id = _create_challenge(client, h1)
+        client.post(f"/challenges/{ch_id}/join", headers=h1)
+        client.post(f"/challenges/{ch_id}/join", headers=h2)
+        client.post("/steps/", json={"date": "2026-03-10", "step_count": 8000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-03-11", "step_count": 12000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-03-10", "step_count": 5000}, headers=h2)
+
+        resp = client.get(f"/challenges/{ch_id}/team-stats")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total_steps"] == 25000
+        assert body["total_participants"] == 2
+        assert body["total_miles"] == 12.5
+        assert body["total_days_logged"] == 3
+        assert body["average_daily_per_participant"] > 0
+
+    def test_team_stats_nonexistent(self, client):
+        resp = client.get("/challenges/9999/team-stats")
+        assert resp.status_code == 404
+
+
+class TestOverallTeamStats:
+    def test_overall_team_stats_empty(self, client):
+        resp = client.get("/leaderboard/overall/team-stats")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total_steps"] == 0
+        assert body["total_users"] == 0
+
+    def test_overall_team_stats_with_data(self, client):
+        h1 = _register_and_get_header(client, "oteam1@test.com", "Alice")
+        h2 = _register_and_get_header(client, "oteam2@test.com", "Bob")
+        client.post("/steps/", json={"date": "2026-03-10", "step_count": 10000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-03-11", "step_count": 5000}, headers=h1)
+        client.post("/steps/", json={"date": "2026-03-10", "step_count": 20000}, headers=h2)
+
+        resp = client.get("/leaderboard/overall/team-stats")
+        assert resp.status_code == 200
+        body = resp.json()
+        assert body["total_steps"] == 35000
+        assert body["total_miles"] == 17.5
+        assert body["total_users"] == 2
+        assert body["total_days_logged"] == 3
+        assert body["average_daily_per_user"] > 0

@@ -85,3 +85,24 @@ class OverallUserStats(BaseModel):
     total_users: int
     days_logged: int
     average_daily: float
+
+
+class TeamChallengeStats(BaseModel):
+    """Aggregate stats for all participants in a challenge."""
+
+    challenge_id: int
+    total_steps: int
+    total_miles: float
+    total_participants: int
+    total_days_logged: int
+    average_daily_per_participant: float
+
+
+class OverallTeamStats(BaseModel):
+    """Aggregate all-time stats across all users."""
+
+    total_steps: int
+    total_miles: float
+    total_users: int
+    total_days_logged: int
+    average_daily_per_user: float

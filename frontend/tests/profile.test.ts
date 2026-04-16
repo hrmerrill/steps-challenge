@@ -24,6 +24,11 @@ vi.mock("../src/router", () => ({
   navigate: vi.fn(),
 }));
 
+vi.mock("../src/components/step-chart", () => ({
+  renderStepChart: vi.fn(),
+  DayData: {},
+}));
+
 import { apiFetch } from "../src/api";
 import { isAuthenticated, getCurrentUser } from "../src/auth";
 import { navigate } from "../src/router";
@@ -74,11 +79,18 @@ describe("profile page", () => {
   it("shows high tier for 10k+ avg daily steps", async () => {
     mockIsAuth.mockReturnValue(true);
     mockGetUser.mockReturnValue(TEST_USER);
-    mockApiFetch.mockResolvedValue({
-      total_steps: 300_000,
-      total_miles: 150,
-      days_logged: 30,
-      average_daily: 12_000,
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/steps/summary") {
+        return { total_steps: 300_000, total_miles: 150, days_logged: 30, average_daily: 12_000 };
+      }
+      if (path === "/leaderboard/overall/my-stats") {
+        return {
+          user_id: 1, display_name: "Test User", total_steps: 300_000,
+          total_miles: 150, rank: 1, total_users: 5, days_logged: 30, average_daily: 12_000,
+        };
+      }
+      if (path === "/challenges/") return [];
+      return [];
     });
 
     await renderProfile(container);
@@ -92,11 +104,18 @@ describe("profile page", () => {
   it("shows mid tier for 5k-10k avg daily steps", async () => {
     mockIsAuth.mockReturnValue(true);
     mockGetUser.mockReturnValue(TEST_USER);
-    mockApiFetch.mockResolvedValue({
-      total_steps: 150_000,
-      total_miles: 75,
-      days_logged: 30,
-      average_daily: 7_500,
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/steps/summary") {
+        return { total_steps: 150_000, total_miles: 75, days_logged: 30, average_daily: 7_500 };
+      }
+      if (path === "/leaderboard/overall/my-stats") {
+        return {
+          user_id: 1, display_name: "Test User", total_steps: 150_000,
+          total_miles: 75, rank: 2, total_users: 5, days_logged: 30, average_daily: 7_500,
+        };
+      }
+      if (path === "/challenges/") return [];
+      return [];
     });
 
     await renderProfile(container);
@@ -109,11 +128,18 @@ describe("profile page", () => {
   it("shows low tier for under 5k avg daily steps", async () => {
     mockIsAuth.mockReturnValue(true);
     mockGetUser.mockReturnValue(TEST_USER);
-    mockApiFetch.mockResolvedValue({
-      total_steps: 30_000,
-      total_miles: 15,
-      days_logged: 30,
-      average_daily: 2_000,
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/steps/summary") {
+        return { total_steps: 30_000, total_miles: 15, days_logged: 30, average_daily: 2_000 };
+      }
+      if (path === "/leaderboard/overall/my-stats") {
+        return {
+          user_id: 1, display_name: "Test User", total_steps: 30_000,
+          total_miles: 15, rank: 3, total_users: 5, days_logged: 30, average_daily: 2_000,
+        };
+      }
+      if (path === "/challenges/") return [];
+      return [];
     });
 
     await renderProfile(container);
@@ -123,14 +149,21 @@ describe("profile page", () => {
     expect(tierEl.textContent).toContain("2,000 steps/day");
   });
 
-  it("renders all-time stats grid", async () => {
+  it("renders all-time stats grid with rank", async () => {
     mockIsAuth.mockReturnValue(true);
     mockGetUser.mockReturnValue(TEST_USER);
-    mockApiFetch.mockResolvedValue({
-      total_steps: 300_000,
-      total_miles: 150,
-      days_logged: 30,
-      average_daily: 10_000,
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/steps/summary") {
+        return { total_steps: 300_000, total_miles: 150, days_logged: 30, average_daily: 10_000 };
+      }
+      if (path === "/leaderboard/overall/my-stats") {
+        return {
+          user_id: 1, display_name: "Test User", total_steps: 300_000,
+          total_miles: 150, rank: 2, total_users: 10, days_logged: 30, average_daily: 10_000,
+        };
+      }
+      if (path === "/challenges/") return [];
+      return [];
     });
 
     await renderProfile(container);
@@ -140,5 +173,45 @@ describe("profile page", () => {
     expect(container.innerHTML).toContain("150");
     expect(container.innerHTML).toContain("Total Miles");
     expect(container.innerHTML).toContain("Avg Daily Steps");
+    expect(container.innerHTML).toContain("Rank 2 of 10");
+  });
+
+  it("shows active challenge stats when user has joined", async () => {
+    mockIsAuth.mockReturnValue(true);
+    mockGetUser.mockReturnValue(TEST_USER);
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/steps/summary") {
+        return { total_steps: 100_000, total_miles: 50, days_logged: 20, average_daily: 5_000 };
+      }
+      if (path === "/leaderboard/overall/my-stats") {
+        return {
+          user_id: 1, display_name: "Test User", total_steps: 100_000,
+          total_miles: 50, rank: 1, total_users: 1, days_logged: 20, average_daily: 5_000,
+        };
+      }
+      if (path === "/challenges/") {
+        return [{
+          id: 1, name: "April Challenge", description: null,
+          start_date: "2026-04-01", end_date: "2026-04-30",
+          is_active: true, participant_count: 3,
+        }];
+      }
+      if (path === "/challenges/1/membership") return { joined: true, miles_club_tier: "mid" };
+      if (path === "/challenges/1/my-stats") {
+        return {
+          user_id: 1, display_name: "Test User", challenge_id: 1,
+          total_steps: 50_000, total_miles: 25, rank: 1, total_participants: 3,
+          days_logged: 10, average_daily: 5_000, miles_club_tier: "mid",
+        };
+      }
+      if (path.startsWith("/steps/")) return [];
+      return [];
+    });
+
+    await renderProfile(container);
+
+    expect(container.innerHTML).toContain("Your Stats — April Challenge");
+    expect(container.innerHTML).toContain("50,000");
+    expect(container.innerHTML).toContain("Rank 1 of 3");
   });
 });

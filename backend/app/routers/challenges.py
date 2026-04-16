@@ -11,7 +11,7 @@ from app.database import get_db
 from app.models.challenge import Challenge, ChallengeParticipant
 from app.models.steps import DailySteps
 from app.models.user import User
-from app.schemas.challenge import ChallengeCreate, ChallengeResponse, ChallengeMembership, UserChallengeStats
+from app.schemas.challenge import ChallengeCreate, ChallengeResponse, ChallengeMembership, TeamChallengeStats, UserChallengeStats
 from app.services.auth import get_current_user
 from app.services.miles_clubs import calculate_tier
 from app.services.trail import steps_to_miles
@@ -125,6 +125,61 @@ def get_membership(
     if participant:
         return ChallengeMembership(joined=True, miles_club_tier=participant.miles_club_tier)
     return ChallengeMembership(joined=False)
+
+
+@router.get("/{challenge_id}/team-stats", response_model=TeamChallengeStats)
+def get_team_stats(
+    challenge_id: int = Path(gt=0),
+    db: Session = Depends(get_db),
+):
+    """Get aggregate stats for all participants in a challenge (no auth required)."""
+    challenge = db.query(Challenge).filter(Challenge.id == challenge_id).first()
+    if not challenge:
+        raise HTTPException(status_code=404, detail="Challenge not found")
+
+    total_participants = (
+        db.query(ChallengeParticipant)
+        .filter(ChallengeParticipant.challenge_id == challenge_id)
+        .count()
+    )
+
+    participants_sub = (
+        db.query(ChallengeParticipant.user_id)
+        .filter(ChallengeParticipant.challenge_id == challenge_id)
+        .subquery()
+    )
+
+    agg = (
+        db.query(
+            func.coalesce(func.sum(DailySteps.step_count), 0).label("total"),
+            func.count(DailySteps.id).label("days"),
+        )
+        .filter(
+            DailySteps.user_id.in_(db.query(participants_sub.c.user_id)),
+            DailySteps.date >= challenge.start_date,
+            DailySteps.date <= challenge.end_date,
+        )
+        .one()
+    )
+
+    total_steps = int(agg.total)
+    total_days = int(agg.days)
+    avg_daily = (
+        round(total_steps / (total_participants * max(1, total_days / total_participants)), 1)
+        if total_participants > 0 and total_days > 0
+        else 0.0
+    )
+    # Simpler: average daily = total_steps / total_days_logged (across all users)
+    avg_daily = round(total_steps / total_days, 1) if total_days > 0 else 0.0
+
+    return TeamChallengeStats(
+        challenge_id=challenge_id,
+        total_steps=total_steps,
+        total_miles=steps_to_miles(total_steps),
+        total_participants=total_participants,
+        total_days_logged=total_days,
+        average_daily_per_participant=avg_daily,
+    )
 
 
 @router.get("/{challenge_id}/my-stats", response_model=UserChallengeStats)

@@ -1,11 +1,10 @@
 /**
- * Landing / Dashboard page — challenge selector, status banner, join, personal stats,
- * leaderboard, trail map, step chart. Supports per-challenge and overall views.
+ * Landing / Dashboard page — challenge selector, status banner, join, team stats,
+ * leaderboard, trail map. Supports per-challenge and overall views.
  */
 
 import { renderLeaderboard } from "../components/leaderboard";
 import { renderTrailMap } from "../components/trail-map";
-import { renderStepChart, DayData } from "../components/step-chart";
 import { apiFetch, ApiError } from "../api";
 import { isAuthenticated, getCurrentUser } from "../auth";
 
@@ -46,6 +45,23 @@ interface OverallUserStats {
   total_users: number;
   days_logged: number;
   average_daily: number;
+}
+
+interface TeamChallengeStats {
+  challenge_id: number;
+  total_steps: number;
+  total_miles: number;
+  total_participants: number;
+  total_days_logged: number;
+  average_daily_per_participant: number;
+}
+
+interface OverallTeamStats {
+  total_steps: number;
+  total_miles: number;
+  total_users: number;
+  total_days_logged: number;
+  average_daily_per_user: number;
 }
 
 type ChallengeStatus = "upcoming" | "active" | "ended";
@@ -144,20 +160,12 @@ function renderHowItWorks(challenge: Challenge): string {
   `;
 }
 
-function renderStatsCard(container: HTMLElement, stats: UserChallengeStats): void {
-  const tierLabels: Record<string, string> = {
-    high: ">10k steps/day",
-    mid: "5k\u201310k steps/day",
-    low: "0\u20135k steps/day",
-    none: "\u2014",
-  };
-  const tierLabel = tierLabels[stats.miles_club_tier] ?? "\u2014";
-
+function renderTeamStatsCard(container: HTMLElement, stats: TeamChallengeStats): void {
   container.innerHTML = `
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">Your Stats</h3>
-        <span class="card-subtitle">Rank ${stats.rank} of ${stats.total_participants}</span>
+        <h3 class="card-title">Team Stats</h3>
+        <span class="card-subtitle">${stats.total_participants} participant${stats.total_participants === 1 ? "" : "s"}</span>
       </div>
       <div class="stats-grid">
         <div class="stat-item">
@@ -169,28 +177,24 @@ function renderStatsCard(container: HTMLElement, stats: UserChallengeStats): voi
           <div class="stat-label">Miles</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">${stats.days_logged}</div>
+          <div class="stat-value">${stats.total_days_logged}</div>
           <div class="stat-label">Days Logged</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">${formatNumber(stats.average_daily)}</div>
+          <div class="stat-value">${formatNumber(stats.average_daily_per_participant)}</div>
           <div class="stat-label">Avg Daily</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value">${tierLabel}</div>
-          <div class="stat-label">Miles Club</div>
         </div>
       </div>
     </div>
   `;
 }
 
-function renderOverallStatsCard(container: HTMLElement, stats: OverallUserStats): void {
+function renderOverallTeamStatsCard(container: HTMLElement, stats: OverallTeamStats): void {
   container.innerHTML = `
     <div class="card">
       <div class="card-header">
-        <h3 class="card-title">All-Time Stats</h3>
-        <span class="card-subtitle">Rank ${stats.rank} of ${stats.total_users}</span>
+        <h3 class="card-title">Team Stats</h3>
+        <span class="card-subtitle">${stats.total_users} user${stats.total_users === 1 ? "" : "s"} all-time</span>
       </div>
       <div class="stats-grid">
         <div class="stat-item">
@@ -202,11 +206,11 @@ function renderOverallStatsCard(container: HTMLElement, stats: OverallUserStats)
           <div class="stat-label">Miles</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">${stats.days_logged}</div>
+          <div class="stat-value">${stats.total_days_logged}</div>
           <div class="stat-label">Days Logged</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value">${formatNumber(stats.average_daily)}</div>
+          <div class="stat-value">${formatNumber(stats.average_daily_per_user)}</div>
           <div class="stat-label">Avg Daily</div>
         </div>
       </div>
@@ -270,10 +274,7 @@ async function renderChallengeView(
       <div id="stats-section" style="margin-bottom: var(--space-lg);"></div>
       <div class="card-grid--wide" style="display: grid; gap: var(--space-lg);">
         <div id="trail-section"></div>
-        <div class="card-grid">
-          <div id="leaderboard-section"></div>
-          <div id="chart-section"></div>
-        </div>
+        <div id="leaderboard-section"></div>
       </div>
     </div>
   `;
@@ -303,21 +304,12 @@ async function renderChallengeView(
   });
 
   let membership: Membership | null = null;
-  let userStats: UserChallengeStats | null = null;
 
   if (isAuthenticated() && user) {
     try {
       membership = await apiFetch<Membership>(`/challenges/${challenge.id}/membership`);
     } catch {
       membership = null;
-    }
-
-    if (membership?.joined) {
-      try {
-        userStats = await apiFetch<UserChallengeStats>(`/challenges/${challenge.id}/my-stats`);
-      } catch {
-        userStats = null;
-      }
     }
   }
 
@@ -338,10 +330,13 @@ async function renderChallengeView(
     );
   }
 
-  // Individual stats
+  // Team stats (visible to everyone, no auth required)
   const statsSection = document.getElementById("stats-section")!;
-  if (userStats) {
-    renderStatsCard(statsSection, userStats);
+  try {
+    const teamStats = await apiFetch<TeamChallengeStats>(`/challenges/${challenge.id}/team-stats`);
+    renderTeamStatsCard(statsSection, teamStats);
+  } catch {
+    statsSection.innerHTML = '<div class="card"><p>Failed to load team stats.</p></div>';
   }
 
   // Leaderboard + trail in parallel
@@ -353,18 +348,6 @@ async function renderChallengeView(
     ),
     renderTrailMap(document.getElementById("trail-section")!, challenge.id),
   ]);
-
-  // User's own step chart
-  if (isAuthenticated() && membership?.joined) {
-    try {
-      const steps = await apiFetch<DayData[]>(
-        `/steps/?start_date=${challenge.start_date}&end_date=${challenge.end_date}`,
-      );
-      renderStepChart(document.getElementById("chart-section")!, steps, "Your Steps");
-    } catch {
-      // chart is optional — ignore
-    }
-  }
 }
 
 async function renderOverallView(
@@ -393,10 +376,7 @@ async function renderOverallView(
       <div id="stats-section" style="margin-bottom: var(--space-lg);"></div>
       <div class="card-grid--wide" style="display: grid; gap: var(--space-lg);">
         <div id="trail-section"></div>
-        <div class="card-grid">
-          <div id="leaderboard-section"></div>
-          <div id="chart-section"></div>
-        </div>
+        <div id="leaderboard-section"></div>
       </div>
     </div>
   `;
@@ -412,7 +392,14 @@ async function renderOverallView(
     }
   });
 
-  // Leaderboard + trail in parallel (always shown, no auth needed)
+  // Leaderboard + trail + team stats in parallel (always shown, no auth needed)
+  const teamStatsPromise = apiFetch<OverallTeamStats>("/leaderboard/overall/team-stats")
+    .then((stats) => renderOverallTeamStatsCard(document.getElementById("stats-section")!, stats))
+    .catch(() => {
+      document.getElementById("stats-section")!.innerHTML =
+        '<div class="card"><p>Failed to load team stats.</p></div>';
+    });
+
   await Promise.all([
     renderLeaderboard(
       document.getElementById("leaderboard-section")!,
@@ -420,26 +407,8 @@ async function renderOverallView(
       user?.id,
     ),
     renderTrailMap(document.getElementById("trail-section")!, "overall"),
+    teamStatsPromise,
   ]);
-
-  // Auth-gated: personal stats + step chart
-  if (isAuthenticated()) {
-    try {
-      const [overallStats, allSteps] = await Promise.all([
-        apiFetch<OverallUserStats>("/leaderboard/overall/my-stats"),
-        apiFetch<DayData[]>("/steps/"),
-      ]);
-
-      renderOverallStatsCard(document.getElementById("stats-section")!, overallStats);
-      renderStepChart(document.getElementById("chart-section")!, allSteps, "All-Time Steps");
-    } catch {
-      document.getElementById("stats-section")!.innerHTML =
-        '<div class="card"><p>Failed to load overall stats.</p></div>';
-    }
-  } else {
-    document.getElementById("stats-section")!.innerHTML =
-      '<div class="card"><p>Log in to see your overall progress.</p></div>';
-  }
 }
 
 export async function renderLanding(container: HTMLElement): Promise<void> {
