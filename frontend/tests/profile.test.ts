@@ -5,6 +5,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 vi.mock("../src/api", () => ({
   apiFetch: vi.fn(),
+  apiUpload: vi.fn(),
   ApiError: class ApiError extends Error {
     status: number;
     constructor(status: number, message: string) {
@@ -18,6 +19,7 @@ vi.mock("../src/api", () => ({
 vi.mock("../src/auth", () => ({
   isAuthenticated: vi.fn(),
   getCurrentUser: vi.fn(),
+  fetchMe: vi.fn(),
 }));
 
 vi.mock("../src/router", () => ({
@@ -43,6 +45,7 @@ const TEST_USER = {
   id: 1,
   email: "test@example.com",
   display_name: "Test User",
+  profile_photo_url: null as string | null,
   garmin_connected: false,
   strava_connected: false,
   fitbit_connected: false,
@@ -213,5 +216,53 @@ describe("profile page", () => {
     expect(container.innerHTML).toContain("Your Stats — April Challenge");
     expect(container.innerHTML).toContain("50,000");
     expect(container.innerHTML).toContain("Rank 1 of 3");
+  });
+
+  it("shows initials avatar when no photo uploaded", async () => {
+    mockIsAuth.mockReturnValue(true);
+    mockGetUser.mockReturnValue({ ...TEST_USER, profile_photo_url: null });
+    mockApiFetch.mockRejectedValue(new Error("network"));
+
+    await renderProfile(container);
+
+    const avatar = container.querySelector("#profile-avatar");
+    expect(avatar).not.toBeNull();
+    expect(avatar!.innerHTML).toContain("avatar-initials");
+    expect(avatar!.innerHTML).toContain("TU");
+  });
+
+  it("shows photo when profile_photo_url exists", async () => {
+    mockIsAuth.mockReturnValue(true);
+    mockGetUser.mockReturnValue({ ...TEST_USER, profile_photo_url: "/uploads/profile_photos/abc.png" });
+    mockApiFetch.mockRejectedValue(new Error("network"));
+
+    await renderProfile(container);
+
+    const avatar = container.querySelector("#profile-avatar");
+    expect(avatar).not.toBeNull();
+    expect(avatar!.innerHTML).toContain("avatar-img");
+    expect(avatar!.innerHTML).toContain("/uploads/profile_photos/abc.png");
+  });
+
+  it("shows upload button when no photo", async () => {
+    mockIsAuth.mockReturnValue(true);
+    mockGetUser.mockReturnValue({ ...TEST_USER, profile_photo_url: null });
+    mockApiFetch.mockRejectedValue(new Error("network"));
+
+    await renderProfile(container);
+
+    expect(container.innerHTML).toContain("Upload Photo");
+    expect(container.querySelector("#remove-photo-btn")).toBeNull();
+  });
+
+  it("shows change and remove buttons when photo exists", async () => {
+    mockIsAuth.mockReturnValue(true);
+    mockGetUser.mockReturnValue({ ...TEST_USER, profile_photo_url: "/uploads/profile_photos/abc.png" });
+    mockApiFetch.mockRejectedValue(new Error("network"));
+
+    await renderProfile(container);
+
+    expect(container.innerHTML).toContain("Change Photo");
+    expect(container.querySelector("#remove-photo-btn")).not.toBeNull();
   });
 });

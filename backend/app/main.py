@@ -1,7 +1,10 @@
 """FastAPI application entry point."""
 
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
@@ -36,6 +39,10 @@ app.include_router(auth_router.router)
 app.include_router(steps_router.router)
 app.include_router(challenges_router.router)
 app.include_router(leaderboard_router.router)
+
+# Serve uploaded files (profile photos, etc.)
+os.makedirs(settings.upload_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=settings.upload_dir), name="uploads")
 
 
 @app.get("/health")

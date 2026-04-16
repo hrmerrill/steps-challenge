@@ -16,6 +16,9 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     display_name: Mapped[str] = mapped_column(String(100), nullable=False)
 
+    # Profile photo (relative URL path, e.g. "/uploads/profile_photos/abc.jpg")
+    profile_photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     # Fitness provider OAuth tokens (null = not connected)
     garmin_token: Mapped[str | None] = mapped_column(String(500), nullable=True)
     strava_token: Mapped[str | None] = mapped_column(String(500), nullable=True)

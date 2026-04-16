@@ -39,6 +39,7 @@ class LeaderboardEntry(BaseModel):
     rank: int
     user_id: int
     display_name: str
+    profile_photo_url: str | None = None
     total_steps: int
     miles_club_tier: MilesClubTier = MilesClubTier.NONE
     total_miles: float

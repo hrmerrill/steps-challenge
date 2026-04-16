@@ -1,10 +1,10 @@
 /**
- * User profile page — personal info, all-time stats, and active challenge stats.
+ * User profile page — personal info, photo upload, all-time stats, and active challenge stats.
  */
 
-import { getCurrentUser, isAuthenticated } from "../auth";
+import { getCurrentUser, isAuthenticated, fetchMe } from "../auth";
 import { navigate } from "../router";
-import { apiFetch } from "../api";
+import { apiFetch, apiUpload } from "../api";
 import { calculateTier, renderMilesClubBadge } from "../components/miles-club";
 import { renderStepChart, DayData } from "../components/step-chart";
 
@@ -51,6 +51,21 @@ function formatNumber(n: number): string {
   return n.toLocaleString();
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+function renderAvatarHtml(photoUrl: string | null | undefined, displayName: string): string {
+  if (photoUrl) {
+    return `<img src="${photoUrl}" alt="${displayName}" class="avatar-img" />`;
+  }
+  return `<span class="avatar-initials">${getInitials(displayName)}</span>`;
+}
+
 export async function renderProfile(container: HTMLElement): Promise<void> {
   if (!isAuthenticated()) {
     navigate("/login");
@@ -63,14 +78,31 @@ export async function renderProfile(container: HTMLElement): Promise<void> {
     <div class="container" style="max-width: 700px; padding-top: var(--space-xl);">
       <div class="card">
         <h2 class="card-title" style="margin-bottom: var(--space-lg);">Profile</h2>
-        <div style="margin-bottom: var(--space-md);">
-          <strong>Name:</strong> ${user?.display_name ?? "Unknown"}
-        </div>
-        <div style="margin-bottom: var(--space-md);">
-          <strong>Email:</strong> ${user?.email ?? "Unknown"}
-        </div>
-        <div style="margin-bottom: var(--space-lg);">
-          <strong>Tier:</strong> <span id="profile-tier" style="color: var(--color-text-muted);">—</span>
+        <div style="display: flex; align-items: center; gap: var(--space-lg); margin-bottom: var(--space-lg); flex-wrap: wrap;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: var(--space-sm);">
+            <div id="profile-avatar" class="avatar avatar--xl">
+              ${renderAvatarHtml(user?.profile_photo_url, user?.display_name ?? "?")}
+            </div>
+            <div style="display: flex; gap: var(--space-xs);">
+              <label class="btn btn-secondary btn-sm" style="cursor: pointer;">
+                ${user?.profile_photo_url ? "Change" : "Upload"} Photo
+                <input type="file" id="photo-input" accept="image/jpeg,image/png,image/webp,image/gif" style="display: none;" />
+              </label>
+              ${user?.profile_photo_url ? '<button id="remove-photo-btn" class="btn btn-secondary btn-sm">Remove</button>' : ""}
+            </div>
+            <p id="photo-error" style="color: var(--color-error); font-size: 0.75rem; display: none;"></p>
+          </div>
+          <div style="flex: 1;">
+            <div style="margin-bottom: var(--space-sm);">
+              <strong>Name:</strong> ${user?.display_name ?? "Unknown"}
+            </div>
+            <div style="margin-bottom: var(--space-sm);">
+              <strong>Email:</strong> ${user?.email ?? "Unknown"}
+            </div>
+            <div>
+              <strong>Tier:</strong> <span id="profile-tier" style="color: var(--color-text-muted);">—</span>
+            </div>
+          </div>
         </div>
         <div id="profile-stats"></div>
       </div>
@@ -78,6 +110,44 @@ export async function renderProfile(container: HTMLElement): Promise<void> {
       <div id="profile-chart" style="margin-top: var(--space-lg);"></div>
     </div>
   `;
+
+  // Photo upload handler
+  const photoInput = document.getElementById("photo-input") as HTMLInputElement;
+  const photoError = document.getElementById("photo-error")!;
+  const avatarEl = document.getElementById("profile-avatar")!;
+
+  photoInput.addEventListener("change", async () => {
+    const file = photoInput.files?.[0];
+    if (!file) return;
+    photoError.style.display = "none";
+
+    try {
+      const resp = await apiUpload<{ profile_photo_url: string }>("/auth/profile-photo", file);
+      avatarEl.innerHTML = `<img src="${resp.profile_photo_url}" alt="Profile" class="avatar-img" />`;
+      await fetchMe();
+      // Re-render to update buttons
+      renderProfile(container);
+    } catch (err: any) {
+      photoError.textContent = err.message || "Upload failed";
+      photoError.style.display = "block";
+    }
+  });
+
+  // Remove photo handler
+  const removeBtn = document.getElementById("remove-photo-btn");
+  if (removeBtn) {
+    removeBtn.addEventListener("click", async () => {
+      photoError.style.display = "none";
+      try {
+        await apiFetch("/auth/profile-photo", { method: "DELETE" });
+        await fetchMe();
+        renderProfile(container);
+      } catch (err: any) {
+        photoError.textContent = err.message || "Remove failed";
+        photoError.style.display = "block";
+      }
+    });
+  }
 
   // All-time stats + rank
   try {

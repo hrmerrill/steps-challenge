@@ -18,6 +18,7 @@ class UserResponse(BaseModel):
     id: int
     email: str
     display_name: str
+    profile_photo_url: str | None = None
     garmin_connected: bool = False
     strava_connected: bool = False
     fitbit_connected: bool = False

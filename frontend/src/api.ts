@@ -70,3 +70,32 @@ export class ApiError extends Error {
     this.name = "ApiError";
   }
 }
+
+/** Upload a file via multipart/form-data. Returns parsed JSON. */
+export async function apiUpload<T = unknown>(
+  path: string,
+  file: File,
+  fieldName = "file",
+): Promise<T> {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const form = new FormData();
+  form.append(fieldName, file);
+
+  const resp = await fetch(`${API_BASE}${path}`, {
+    method: "POST",
+    headers,
+    body: form,
+  });
+
+  if (!resp.ok) {
+    const errorBody = await resp.json().catch(() => ({}));
+    throw new ApiError(resp.status, errorBody.detail ?? resp.statusText);
+  }
+
+  return resp.json() as Promise<T>;
+}

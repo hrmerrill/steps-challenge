@@ -29,6 +29,11 @@ class Settings(BaseSettings):
     # Steps-to-miles conversion (average stride)
     steps_per_mile: int = 2_000
 
+    # Profile photo uploads
+    upload_dir: str = "uploads"
+    max_photo_size: int = 5 * 1024 * 1024  # 5 MB
+    allowed_photo_types: str = "image/jpeg,image/png,image/webp,image/gif"
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 

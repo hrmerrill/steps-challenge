@@ -8,6 +8,7 @@ export interface AuthUser {
   id: number;
   email: string;
   display_name: string;
+  profile_photo_url: string | null;
   garmin_connected: boolean;
   strava_connected: boolean;
   fitbit_connected: boolean;

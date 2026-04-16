@@ -1,5 +1,5 @@
 /**
- * Leaderboard card component.
+ * Leaderboard card component with profile photo thumbnails.
  */
 
 import { apiFetch } from "../api";
@@ -8,6 +8,7 @@ export interface LeaderboardEntry {
   rank: number;
   user_id: number;
   display_name: string;
+  profile_photo_url: string | null;
   total_steps: number;
   miles_club_tier: string;
   total_miles: number;
@@ -30,6 +31,23 @@ export function tierBadgeHtml(tier: string): string {
   const badge = TIER_BADGE[tier] ?? TIER_BADGE["none"];
   if (!badge.label) return "";
   return `<span class="badge ${badge.class}">${badge.label}</span>`;
+}
+
+/** Get initials for avatar fallback. */
+function getInitials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
+/** Render a small avatar (thumbnail or initials). */
+export function avatarHtml(photoUrl: string | null | undefined, displayName: string): string {
+  if (photoUrl) {
+    return `<span class="avatar avatar--sm"><img src="${photoUrl}" alt="${displayName}" class="avatar-img" /></span>`;
+  }
+  return `<span class="avatar avatar--sm"><span class="avatar-initials">${getInitials(displayName)}</span></span>`;
 }
 
 /** Render the leaderboard card into a container. Highlights currentUserId if provided. */
@@ -64,6 +82,7 @@ export async function renderLeaderboard(
         return `
         <div class="${rowClass}">
           <span class="leaderboard-rank">${e.rank}</span>
+          ${avatarHtml(e.profile_photo_url, e.display_name)}
           <span class="leaderboard-name">${e.display_name}${youTag} ${tierBadgeHtml(e.miles_club_tier)}</span>
           <span class="leaderboard-steps">${formatSteps(e.total_steps)} steps</span>
         </div>

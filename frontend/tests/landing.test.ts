@@ -72,6 +72,7 @@ const TEST_USER = {
   id: 1,
   email: "test@test.com",
   display_name: "Test",
+  profile_photo_url: null,
   garmin_connected: false,
   strava_connected: false,
   fitbit_connected: false,

@@ -25,10 +25,11 @@ def get_overall_leaderboard(db: Session = Depends(get_db)):
         db.query(
             User.id,
             User.display_name,
+            User.profile_photo_url,
             func.coalesce(func.sum(DailySteps.step_count), 0).label("total_steps"),
         )
         .outerjoin(DailySteps, DailySteps.user_id == User.id)
-        .group_by(User.id, User.display_name)
+        .group_by(User.id, User.display_name, User.profile_photo_url)
         .having(func.coalesce(func.sum(DailySteps.step_count), 0) > 0)
         .order_by(func.coalesce(func.sum(DailySteps.step_count), 0).desc())
         .all()
@@ -39,9 +40,10 @@ def get_overall_leaderboard(db: Session = Depends(get_db)):
             rank=i + 1,
             user_id=row[0],
             display_name=row[1],
+            profile_photo_url=row[2],
             miles_club_tier=MilesClubTier.NONE,
-            total_steps=row[2],
-            total_miles=steps_to_miles(row[2]),
+            total_steps=row[3],
+            total_miles=steps_to_miles(row[3]),
         )
         for i, row in enumerate(results)
     ]
@@ -154,6 +156,7 @@ def get_leaderboard(challenge_id: int = Path(gt=0), db: Session = Depends(get_db
         db.query(
             User.id,
             User.display_name,
+            User.profile_photo_url,
             ChallengeParticipant.miles_club_tier,
             func.coalesce(func.sum(DailySteps.step_count), 0).label("total_steps"),
         )
@@ -165,7 +168,7 @@ def get_leaderboard(challenge_id: int = Path(gt=0), db: Session = Depends(get_db
             & (DailySteps.date <= challenge.end_date),
         )
         .filter(ChallengeParticipant.challenge_id == challenge_id)
-        .group_by(User.id, User.display_name, ChallengeParticipant.miles_club_tier)
+        .group_by(User.id, User.display_name, User.profile_photo_url, ChallengeParticipant.miles_club_tier)
         .order_by(func.coalesce(func.sum(DailySteps.step_count), 0).desc())
         .all()
     )
@@ -175,9 +178,10 @@ def get_leaderboard(challenge_id: int = Path(gt=0), db: Session = Depends(get_db
             rank=i + 1,
             user_id=row[0],
             display_name=row[1],
-            miles_club_tier=row[2],
-            total_steps=row[3],
-            total_miles=steps_to_miles(row[3]),
+            profile_photo_url=row[2],
+            miles_club_tier=row[3],
+            total_steps=row[4],
+            total_miles=steps_to_miles(row[4]),
         )
         for i, row in enumerate(results)
     ]
