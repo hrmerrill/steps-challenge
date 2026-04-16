@@ -9,7 +9,7 @@ from app.models.steps import StepSource
 
 class StepEntry(BaseModel):
     date: datetime.date
-    step_count: int = Field(gt=0, le=500_000)
+    step_count: int = Field(gt=0, le=100_000)
     source: StepSource = StepSource.MANUAL
 
     @field_validator("date")

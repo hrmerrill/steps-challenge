@@ -7,7 +7,7 @@ class TestRegister:
     def test_register_success(self, client):
         resp = client.post("/auth/register", json={
             "email": "new@example.com",
-            "password": "securepass123",
+            "password": "Secure@pass1",
             "display_name": "New User",
         })
         assert resp.status_code == 201
@@ -16,7 +16,7 @@ class TestRegister:
         assert body["token_type"] == "bearer"
 
     def test_register_duplicate_email(self, client):
-        payload = {"email": "dup@example.com", "password": "securepass123", "display_name": "D"}
+        payload = {"email": "dup@example.com", "password": "Secure@pass1", "display_name": "D"}
         client.post("/auth/register", json=payload)
         resp = client.post("/auth/register", json=payload)
         assert resp.status_code == 400
@@ -30,10 +30,34 @@ class TestRegister:
         })
         assert resp.status_code == 422
 
+    def test_register_password_missing_uppercase(self, client):
+        resp = client.post("/auth/register", json={
+            "email": "weak@example.com",
+            "password": "nouppercase1!",
+            "display_name": "W",
+        })
+        assert resp.status_code == 422
+
+    def test_register_password_missing_digit(self, client):
+        resp = client.post("/auth/register", json={
+            "email": "weak@example.com",
+            "password": "NoDigitHere!",
+            "display_name": "W",
+        })
+        assert resp.status_code == 422
+
+    def test_register_password_missing_special(self, client):
+        resp = client.post("/auth/register", json={
+            "email": "weak@example.com",
+            "password": "NoSpecial123",
+            "display_name": "W",
+        })
+        assert resp.status_code == 422
+
     def test_register_invalid_email(self, client):
         resp = client.post("/auth/register", json={
             "email": "not-an-email",
-            "password": "securepass123",
+            "password": "Secure@pass1",
             "display_name": "Bad",
         })
         assert resp.status_code == 422
@@ -43,7 +67,7 @@ class TestLogin:
     def _register(self, client):
         client.post("/auth/register", json={
             "email": "login@example.com",
-            "password": "securepass123",
+            "password": "Secure@pass1",
             "display_name": "Login User",
         })
 
@@ -51,7 +75,7 @@ class TestLogin:
         self._register(client)
         resp = client.post("/auth/login", json={
             "email": "login@example.com",
-            "password": "securepass123",
+            "password": "Secure@pass1",
         })
         assert resp.status_code == 200
         assert "access_token" in resp.json()
@@ -76,7 +100,7 @@ class TestMe:
     def _get_token(self, client) -> str:
         resp = client.post("/auth/register", json={
             "email": "me@example.com",
-            "password": "securepass123",
+            "password": "Secure@pass1",
             "display_name": "Me User",
         })
         return resp.json()["access_token"]

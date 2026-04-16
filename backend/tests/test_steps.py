@@ -6,7 +6,7 @@ import datetime
 class TestLogSteps:
     def _auth_header(self, client) -> dict:
         resp = client.post("/auth/register", json={
-            "email": "steps@test.com", "password": "securepass123", "display_name": "Stepper",
+            "email": "steps@test.com", "password": "Secure@pass1", "display_name": "Stepper",
         })
         return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 

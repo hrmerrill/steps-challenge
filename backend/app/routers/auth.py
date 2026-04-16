@@ -2,6 +2,7 @@
 
 import os
 import uuid
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, status
 from slowapi import Limiter
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
 
 PHOTO_SUBDIR = "profile_photos"
+_ALLOWED_EXTENSIONS: set[str] = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
 
 
 def _photo_dir() -> str:
@@ -28,6 +30,7 @@ def _photo_dir() -> str:
 
 
 def _allowed_content_types() -> set[str]:
+    """Return the set of MIME types accepted for profile photo uploads."""
     return {t.strip() for t in settings.allowed_photo_types.split(",") if t.strip()}
 
 
@@ -97,13 +100,12 @@ async def upload_profile_photo(
         max_mb = settings.max_photo_size / (1024 * 1024)
         raise HTTPException(status_code=400, detail=f"File too large. Maximum size: {max_mb:.0f} MB")
 
-    # Delete old photo if exists
-    if current_user.profile_photo_url:
-        old_path = current_user.profile_photo_url.lstrip("/")
-        if os.path.isfile(old_path):
-            os.remove(old_path)
+    # Delete old photo if it exists and is inside the upload directory
+    _remove_old_photo(current_user.profile_photo_url)
 
-    ext = os.path.splitext(file.filename or "photo.jpg")[1] or ".jpg"
+    ext = os.path.splitext(file.filename or "photo.jpg")[1].lower()
+    if ext not in _ALLOWED_EXTENSIONS:
+        ext = ".jpg"
     filename = f"{uuid.uuid4().hex}{ext}"
     dest = os.path.join(_photo_dir(), filename)
 
@@ -133,8 +135,24 @@ def delete_profile_photo(
 ):
     """Remove the user's profile photo."""
     if current_user.profile_photo_url:
-        old_path = current_user.profile_photo_url.lstrip("/")
-        if os.path.isfile(old_path):
-            os.remove(old_path)
+        _remove_old_photo(current_user.profile_photo_url)
         current_user.profile_photo_url = None
         db.commit()
+
+
+def _remove_old_photo(url: str | None) -> None:
+    """Delete a previously uploaded photo, guarding against path traversal.
+
+    Only removes files that resolve to a path inside ``settings.upload_dir``.
+    """
+    if not url:
+        return
+    relative = url.lstrip("/")
+    target = Path(relative).resolve()
+    upload_root = Path(settings.upload_dir).resolve()
+    try:
+        target.relative_to(upload_root)
+    except ValueError:
+        return  # path outside upload dir — refuse to delete
+    if target.is_file():
+        target.unlink()

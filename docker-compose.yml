@@ -1,35 +1,48 @@
 version: '3.8'
 
+# ---------------------------------------------------------------------------
+# Steps Challenge — Docker Compose
+#
+# All secrets are read from environment variables or a .env file.
+# Copy .env.example to .env and fill in real values before running:
+#
+#   cp .env.example .env
+#   docker compose up -d
+# ---------------------------------------------------------------------------
+
 services:
+  # PostgreSQL database — persistent data stored in the postgres_data volume.
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: steps_user
-      POSTGRES_PASSWORD: steps_password
-      POSTGRES_DB: steps_challenge
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-steps_challenge}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
 
+  # FastAPI backend — connects to `db` via internal Docker network.
   backend:
     build: ./backend
     environment:
-      - DATABASE_URL=postgresql://steps_user:steps_password@db:5432/steps_challenge
-      - JWT_SECRET=CHANGE_ME_TO_A_SECURE_RANDOM_STRING
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-steps_challenge}
+      - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env (use a 32+ char random string)}
     volumes:
-      - uploads_data:/app/uploads
+      - uploads_data:/app/uploads      # persists user-uploaded profile photos
     depends_on:
       - db
     restart: unless-stopped
 
+  # Nginx frontend — serves the built SPA and reverse-proxies /api to backend.
   frontend:
     build: ./frontend
     ports:
-      - "8080:80"
+      - "${FRONTEND_PORT:-8080}:80"    # host port configurable via FRONTEND_PORT
     depends_on:
       - backend
     restart: unless-stopped
 
 volumes:
-  postgres_data:
-  uploads_data:
+  postgres_data:    # PostgreSQL data directory
+  uploads_data:     # user profile photos

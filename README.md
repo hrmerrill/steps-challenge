@@ -117,10 +117,15 @@ curl http://localhost:8000/health
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string | `postgresql://localhost:5432/steps_challenge` |
-| `JWT_SECRET` | Secret for signing JWT tokens | `CHANGE-ME-in-production` |
+| `JWT_SECRET` | Secret for signing JWT tokens (**required**, 32+ chars) | — |
 | `JWT_EXPIRE_MINUTES` | Token lifetime in minutes | `1440` (24 hours) |
+| `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173,http://localhost:3000` |
 | `MILES_CLUB_HIGH` | High tier threshold (avg steps/day) | `10000` |
 | `MILES_CLUB_MID` | Mid tier threshold (avg steps/day) | `5000` |
+| `UPLOAD_DIR` | Directory for user-uploaded files | `uploads` |
+| `MAX_PHOTO_SIZE` | Max profile photo size in bytes | `5242880` (5 MB) |
+
+Copy `.env.example` to `.env` and fill in real values before running.
 
 ## Database Migrations
 
@@ -134,6 +139,47 @@ alembic revision --autogenerate -m "describe your change"
 # Apply migrations
 alembic upgrade head
 ```
+
+## Production Deployment
+
+### Quick start with Docker Compose
+
+```bash
+# 1. Clone and configure
+cp .env.example .env
+# Edit .env — at minimum set JWT_SECRET and POSTGRES_PASSWORD
+
+# 2. Generate a strong JWT secret
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+# Paste the output into .env as JWT_SECRET
+
+# 3. Build and start
+docker compose up -d
+
+# 4. Run database migrations
+docker compose exec backend alembic upgrade head
+```
+
+The app will be available at `http://localhost:8080` (or `FRONTEND_PORT`).
+
+### Manual deployment (no Docker)
+
+1. **Database** — provision a PostgreSQL 15+ instance and set `DATABASE_URL`.
+2. **Backend** — install Python 3.11+, create a venv, `pip install -r requirements.txt`,
+   run `alembic upgrade head`, then start with
+   `gunicorn app.main:app -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000`.
+3. **Frontend** — `npm ci && npm run build`, then serve the `dist/` directory with
+   Nginx, Caddy, or any static file server. Proxy `/api` requests to the backend.
+
+### Production checklist
+
+- [ ] `JWT_SECRET` is a strong random string (32+ chars)
+- [ ] `POSTGRES_PASSWORD` is unique and strong
+- [ ] `CORS_ORIGINS` is set to your production domain only
+- [ ] HTTPS is terminated at the reverse proxy (Nginx/Caddy/ALB)
+- [ ] Database backups are configured (pg_dump cron or managed service)
+- [ ] `DEBUG=false` (default)
+- [ ] Upload volume is backed up or stored on durable storage (S3, etc.)
 
 ## Contributing
 

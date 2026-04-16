@@ -16,14 +16,17 @@ security = HTTPBearer()
 
 
 def hash_password(password: str) -> str:
+    """Return a bcrypt hash of *password*."""
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
+    """Check *plain* text password against a bcrypt *hashed* value."""
     return bcrypt.checkpw(plain.encode("utf-8"), hashed.encode("utf-8"))
 
 
 def create_access_token(user_id: int) -> str:
+    """Create a signed JWT containing the *user_id* as the ``sub`` claim."""
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
     payload = {"sub": str(user_id), "exp": expire}
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)

@@ -8,6 +8,13 @@ frontend/tests/**/*.js
 # === Backend venv ===
 backend/.venv/
 
+# === Local SQLite databases ===
+*.db
+*.db-journal
+
+# === User uploads (runtime data) ===
+uploads/
+
 # === Environment files ===
 .env
 .env.local

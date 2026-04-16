@@ -12,7 +12,7 @@ class TestProfilePhoto:
     def _register_and_token(self, client, email="photo@example.com") -> str:
         resp = client.post("/auth/register", json={
             "email": email,
-            "password": "securepass123",
+            "password": "Secure@pass1",
             "display_name": "Photo User",
         })
         return resp.json()["access_token"]

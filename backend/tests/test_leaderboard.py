@@ -5,7 +5,7 @@ import datetime
 
 def _register_and_get_header(client, email: str, name: str) -> dict:
     resp = client.post("/auth/register", json={
-        "email": email, "password": "securepass123", "display_name": name,
+        "email": email, "password": "Secure@pass1", "display_name": name,
     })
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 
