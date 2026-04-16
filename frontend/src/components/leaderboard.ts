@@ -42,12 +42,50 @@ function getInitials(name: string): string {
     .join("");
 }
 
-/** Render a small avatar (thumbnail or initials). */
+/** Render a small avatar (thumbnail or initials). Clickable when photo exists. */
 export function avatarHtml(photoUrl: string | null | undefined, displayName: string): string {
   if (photoUrl) {
-    return `<span class="avatar avatar--sm"><img src="${photoUrl}" alt="${displayName}" class="avatar-img" /></span>`;
+    return `<button class="avatar avatar--sm avatar--clickable" type="button" data-photo-url="${photoUrl}" data-display-name="${displayName}" aria-label="View ${displayName}'s photo"><img src="${photoUrl}" alt="${displayName}" class="avatar-img" /></button>`;
   }
   return `<span class="avatar avatar--sm"><span class="avatar-initials">${getInitials(displayName)}</span></span>`;
+}
+
+/** Create and show a modal with the full-size profile photo. */
+export function openPhotoModal(photoUrl: string, displayName: string): HTMLElement {
+  closePhotoModal();
+
+  const overlay = document.createElement("div");
+  overlay.className = "photo-modal-overlay";
+  overlay.setAttribute("role", "dialog");
+  overlay.setAttribute("aria-label", `${displayName}'s profile photo`);
+  overlay.innerHTML = `
+    <div class="photo-modal">
+      <button class="photo-modal-close" type="button" aria-label="Close">&times;</button>
+      <img src="${photoUrl}" alt="${displayName}" class="photo-modal-img" />
+      <p class="photo-modal-name">${displayName}</p>
+    </div>
+  `;
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closePhotoModal();
+  });
+  overlay.querySelector(".photo-modal-close")!.addEventListener("click", () => closePhotoModal());
+
+  const keyHandler = (e: KeyboardEvent) => {
+    if (e.key === "Escape") {
+      closePhotoModal();
+      document.removeEventListener("keydown", keyHandler);
+    }
+  };
+  document.addEventListener("keydown", keyHandler);
+
+  document.body.appendChild(overlay);
+  return overlay;
+}
+
+/** Remove photo modal from the DOM. */
+export function closePhotoModal(): void {
+  document.querySelector(".photo-modal-overlay")?.remove();
 }
 
 /** Render the leaderboard card into a container. Highlights currentUserId if provided. */
@@ -96,6 +134,14 @@ export async function renderLeaderboard(
         ${rows}
       </div>
     `;
+
+    container.querySelectorAll<HTMLElement>(".avatar--clickable").forEach((el) => {
+      el.addEventListener("click", () => {
+        const url = el.dataset.photoUrl;
+        const name = el.dataset.displayName;
+        if (url && name) openPhotoModal(url, name);
+      });
+    });
   } catch {
     container.innerHTML = `<div class="card"><p>Failed to load leaderboard.</p></div>`;
   }
