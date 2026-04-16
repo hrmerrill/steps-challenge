@@ -41,7 +41,13 @@ export function renderRegister(container: HTMLElement): void {
           <div style="margin-bottom: var(--space-lg);">
             <label for="password" style="display: block; margin-bottom: var(--space-xs); font-weight: 500;">Password</label>
             <input class="input" type="password" id="password" required minlength="8" />
-            <span style="font-size: 0.75rem; color: var(--color-text-muted);">Minimum 8 characters</span>
+            <ul class="password-requirements" style="font-size: 0.75rem; color: var(--color-text-muted); list-style: none; padding: 0; margin: var(--space-xs) 0 0 0;">
+              <li data-req="length">✗ 8–128 characters</li>
+              <li data-req="uppercase">✗ One uppercase letter</li>
+              <li data-req="lowercase">✗ One lowercase letter</li>
+              <li data-req="digit">✗ One digit</li>
+              <li data-req="special">✗ One special character</li>
+            </ul>
           </div>
           <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
           <p id="register-error" style="color: var(--color-error); margin-top: var(--space-sm); display: none;"></p>
@@ -74,6 +80,28 @@ export function renderRegister(container: HTMLElement): void {
       selectedFile = file;
       const url = URL.createObjectURL(file);
       previewEl.innerHTML = `<img src="${url}" alt="Preview" class="avatar-img" />`;
+    }
+  });
+
+  // Live password requirement validation
+  const passwordInput = document.getElementById("password") as HTMLInputElement;
+  const reqChecks: [string, RegExp | ((v: string) => boolean)][] = [
+    ["length", (v: string) => v.length >= 8 && v.length <= 128],
+    ["uppercase", /[A-Z]/],
+    ["lowercase", /[a-z]/],
+    ["digit", /\d/],
+    ["special", /[^A-Za-z0-9]/],
+  ];
+
+  passwordInput.addEventListener("input", () => {
+    const val = passwordInput.value;
+    for (const [name, check] of reqChecks) {
+      const li = container.querySelector(`[data-req="${name}"]`) as HTMLElement;
+      if (!li) continue;
+      const passed = typeof check === "function" ? check(val) : check.test(val);
+      const label = li.textContent!.slice(2);
+      li.textContent = `${passed ? "✓" : "✗"} ${label}`;
+      li.style.color = passed ? "var(--color-success, #16a34a)" : "var(--color-text-muted)";
     }
   });
 
