@@ -39,15 +39,32 @@ def _calculate_tier(avg_daily_steps: float) -> str:
 
 def upgrade() -> None:
     conn = op.get_bind()
+    dialect = conn.dialect.name
 
-    rows = conn.execute(
-        sa.text(
+    if dialect == "postgresql":
+        select_sql = (
             "SELECT cp.id, cp.user_id, c.start_date "
             "FROM challenge_participants cp "
             "JOIN challenges c ON c.id = cp.challenge_id "
-            "WHERE LOWER(cp.miles_club_tier) = 'none'"
+            "WHERE cp.miles_club_tier::text = 'NONE'"
         )
-    ).fetchall()
+        update_sql = (
+            "UPDATE challenge_participants "
+            "SET miles_club_tier = CAST(:tier AS milesclubtier) "
+            "WHERE id = :id"
+        )
+    else:
+        select_sql = (
+            "SELECT cp.id, cp.user_id, c.start_date "
+            "FROM challenge_participants cp "
+            "JOIN challenges c ON c.id = cp.challenge_id "
+            "WHERE cp.miles_club_tier = 'NONE'"
+        )
+        update_sql = (
+            "UPDATE challenge_participants SET miles_club_tier = :tier WHERE id = :id"
+        )
+
+    rows = conn.execute(sa.text(select_sql)).fetchall()
 
     for cp_id, user_id, start_date in rows:
         if isinstance(start_date, str):
@@ -69,12 +86,7 @@ def upgrade() -> None:
         avg_daily = total / days_in_month if days_in_month > 0 else 0
         tier = _calculate_tier(avg_daily)
 
-        conn.execute(
-            sa.text(
-                "UPDATE challenge_participants SET miles_club_tier = :tier WHERE id = :id"
-            ),
-            {"tier": tier, "id": cp_id},
-        )
+        conn.execute(sa.text(update_sql), {"tier": tier, "id": cp_id})
 
 
 def downgrade() -> None:
