@@ -109,9 +109,9 @@ class TestGetUserTier:
             db_session.add(DailySteps(user_id=user.id, date=datetime.date(2026, 4, day), step_count=8_000))
         db_session.commit()
         tier, avg = get_user_tier(user.id, db_session, reference_date=datetime.date(2026, 4, 1))
-        # 80k total / 30 days in April = 2666.7 → LOW
-        assert tier == MilesClubTier.LOW
-        assert avg == round(80_000 / 30, 1)
+        # 80k total / 10 days with data = 8000 → MID
+        assert tier == MilesClubTier.MID
+        assert avg == 8_000.0
 
     def test_fallback_current_month_high(self, db_session):
         """Current-month fallback can yield higher tiers too."""
@@ -135,6 +135,17 @@ class TestGetUserTier:
         tier, avg = get_user_tier(user.id, db_session, reference_date=datetime.date(2026, 4, 1))
         assert tier == MilesClubTier.LOW
         assert avg == 2_000.0
+
+    def test_sparse_data_averages_over_logged_days_only(self, db_session):
+        """Average uses only days with data, not entire calendar month."""
+        user = self._make_user(db_session, "sparse@test.com")
+        # Only 5 days logged in March with 10k each → avg should be 10k, not ~1.6k
+        for day in (1, 5, 10, 15, 20):
+            db_session.add(DailySteps(user_id=user.id, date=datetime.date(2026, 3, day), step_count=10_000))
+        db_session.commit()
+        tier, avg = get_user_tier(user.id, db_session, reference_date=datetime.date(2026, 4, 1))
+        assert avg == 10_000.0
+        assert tier == MilesClubTier.HIGH
 
 
 class TestGetBulkUserTiers:
@@ -179,3 +190,13 @@ class TestGetBulkUserTiers:
         assert tiers[u_prior.id] == MilesClubTier.MID
         assert tiers[u_current.id] == MilesClubTier.HIGH
         assert tiers[u_none.id] == MilesClubTier.LOW
+
+    def test_bulk_sparse_data_averages_over_logged_days(self, db_session):
+        """Bulk tier calc averages over days with data, not calendar days."""
+        u = self._make_user(db_session, "bsparse@test.com")
+        # 3 days in March at 10k each → avg 10k → HIGH
+        for day in (1, 15, 31):
+            db_session.add(DailySteps(user_id=u.id, date=datetime.date(2026, 3, day), step_count=10_000))
+        db_session.commit()
+        tiers = get_bulk_user_tiers([u.id], db_session, reference_date=datetime.date(2026, 4, 1))
+        assert tiers[u.id] == MilesClubTier.HIGH

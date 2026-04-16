@@ -47,18 +47,20 @@ def _avg_daily_from_range(
     start: datetime.date,
     end: datetime.date,
 ) -> float:
-    """Average daily steps for a user in [start, end] (divides by calendar days)."""
-    days = (end - start).days + 1
-    total: int = (
-        db.query(func.coalesce(func.sum(DailySteps.step_count), 0))
+    """Average daily steps for a user in [start, end] (divides by days with data)."""
+    row = (
+        db.query(
+            func.coalesce(func.sum(DailySteps.step_count), 0).label("total"),
+            func.count(DailySteps.id).label("days"),
+        )
         .filter(
             DailySteps.user_id == user_id,
             DailySteps.date >= start,
             DailySteps.date <= end,
         )
-        .scalar()
+        .one()
     )
-    return total / days if days > 0 else 0
+    return row.total / row.days if row.days > 0 else 0
 
 
 def _current_month_range(
@@ -113,12 +115,13 @@ def _bulk_steps_in_range(
     db: Session,
     start: datetime.date,
     end: datetime.date,
-) -> dict[int, int]:
-    """Return {user_id: total_steps} for users with data in [start, end]."""
+) -> dict[int, tuple[int, int]]:
+    """Return {user_id: (total_steps, days_with_data)} for users with data in [start, end]."""
     rows = (
         db.query(
             DailySteps.user_id,
             func.coalesce(func.sum(DailySteps.step_count), 0).label("total"),
+            func.count(DailySteps.id).label("days"),
         )
         .filter(
             DailySteps.user_id.in_(user_ids),
@@ -128,7 +131,7 @@ def _bulk_steps_in_range(
         .group_by(DailySteps.user_id)
         .all()
     )
-    return {row[0]: row[1] for row in rows}
+    return {row[0]: (row[1], row[2]) for row in rows}
 
 
 def get_bulk_user_tiers(
@@ -145,24 +148,23 @@ def get_bulk_user_tiers(
         return {}
 
     prior_start, prior_end = get_prior_month_range(reference_date)
-    prior_days = (prior_end - prior_start).days + 1
     prior_totals = _bulk_steps_in_range(user_ids, db, prior_start, prior_end)
 
     # Users missing from prior_totals need current-month fallback
     missing = [uid for uid in user_ids if uid not in prior_totals]
-    cur_totals: dict[int, int] = {}
-    cur_days = 0
+    cur_totals: dict[int, tuple[int, int]] = {}
     if missing:
         cur_start, cur_end = _current_month_range(reference_date)
-        cur_days = (cur_end - cur_start).days + 1
         cur_totals = _bulk_steps_in_range(missing, db, cur_start, cur_end)
 
     result: dict[int, MilesClubTier] = {}
     for uid in user_ids:
         if uid in prior_totals:
-            avg = prior_totals[uid] / prior_days if prior_days > 0 else 0
+            total, days = prior_totals[uid]
+            avg = total / days if days > 0 else 0
         elif uid in cur_totals:
-            avg = cur_totals[uid] / cur_days if cur_days > 0 else 0
+            total, days = cur_totals[uid]
+            avg = total / days if days > 0 else 0
         else:
             avg = 0
         result[uid] = calculate_tier(avg)
