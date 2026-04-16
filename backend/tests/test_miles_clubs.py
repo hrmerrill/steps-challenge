@@ -91,15 +91,50 @@ class TestGetUserTier:
         assert avg == 7_000.0
 
     def test_steps_outside_prior_month_ignored(self, db_session):
-        """Steps in the current month or older months don't affect the tier."""
+        """Steps only in older months (not prior) and no prior-month data → falls back to current month."""
         user = self._make_user(db_session, "outside@test.com")
-        # Steps in April (current) and February (two months ago) — should be ignored
-        db_session.add(DailySteps(user_id=user.id, date=datetime.date(2026, 4, 5), step_count=15_000))
+        # Steps in February (two months ago) — not prior month (March)
         db_session.add(DailySteps(user_id=user.id, date=datetime.date(2026, 2, 15), step_count=15_000))
         db_session.commit()
+        # No March data, no April data → LOW
         tier, avg = get_user_tier(user.id, db_session, reference_date=datetime.date(2026, 4, 1))
         assert tier == MilesClubTier.LOW
         assert avg == 0.0
+
+    def test_fallback_to_current_month(self, db_session):
+        """No prior-month data → use current month avg as fallback."""
+        user = self._make_user(db_session, "current@test.com")
+        # Only April data, reference = April 1 → March has nothing → fall back to April
+        for day in range(1, 11):
+            db_session.add(DailySteps(user_id=user.id, date=datetime.date(2026, 4, day), step_count=8_000))
+        db_session.commit()
+        tier, avg = get_user_tier(user.id, db_session, reference_date=datetime.date(2026, 4, 1))
+        # 80k total / 30 days in April = 2666.7 → LOW
+        assert tier == MilesClubTier.LOW
+        assert avg == round(80_000 / 30, 1)
+
+    def test_fallback_current_month_high(self, db_session):
+        """Current-month fallback can yield higher tiers too."""
+        user = self._make_user(db_session, "curhigh@test.com")
+        for day in range(1, 31):
+            db_session.add(DailySteps(user_id=user.id, date=datetime.date(2026, 4, day), step_count=11_000))
+        db_session.commit()
+        tier, avg = get_user_tier(user.id, db_session, reference_date=datetime.date(2026, 4, 1))
+        assert tier == MilesClubTier.HIGH
+        assert avg == 11_000.0
+
+    def test_prior_month_preferred_over_current(self, db_session):
+        """When prior month has data, current month is ignored."""
+        user = self._make_user(db_session, "prefer@test.com")
+        # March: low steps, April: high steps
+        for day in range(1, 32):
+            db_session.add(DailySteps(user_id=user.id, date=datetime.date(2026, 3, day), step_count=2_000))
+        for day in range(1, 31):
+            db_session.add(DailySteps(user_id=user.id, date=datetime.date(2026, 4, day), step_count=15_000))
+        db_session.commit()
+        tier, avg = get_user_tier(user.id, db_session, reference_date=datetime.date(2026, 4, 1))
+        assert tier == MilesClubTier.LOW
+        assert avg == 2_000.0
 
 
 class TestGetBulkUserTiers:
@@ -122,3 +157,25 @@ class TestGetBulkUserTiers:
         tiers = get_bulk_user_tiers([u1.id, u2.id], db_session, reference_date=datetime.date(2026, 4, 1))
         assert tiers[u1.id] == MilesClubTier.HIGH
         assert tiers[u2.id] == MilesClubTier.LOW
+
+    def test_bulk_fallback_to_current_month(self, db_session):
+        """Users without prior-month data fall back to current month in bulk."""
+        u_prior = self._make_user(db_session, "bprior@test.com")
+        u_current = self._make_user(db_session, "bcurrent@test.com")
+        u_none = self._make_user(db_session, "bnone@test.com")
+        # u_prior has March data
+        for day in range(1, 32):
+            db_session.add(DailySteps(user_id=u_prior.id, date=datetime.date(2026, 3, day), step_count=6_000))
+        # u_current has only April data (high steps)
+        for day in range(1, 31):
+            db_session.add(DailySteps(user_id=u_current.id, date=datetime.date(2026, 4, day), step_count=11_000))
+        # u_none has no data at all
+        db_session.commit()
+
+        tiers = get_bulk_user_tiers(
+            [u_prior.id, u_current.id, u_none.id], db_session,
+            reference_date=datetime.date(2026, 4, 1),
+        )
+        assert tiers[u_prior.id] == MilesClubTier.MID
+        assert tiers[u_current.id] == MilesClubTier.HIGH
+        assert tiers[u_none.id] == MilesClubTier.LOW
