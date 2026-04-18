@@ -1,5 +1,5 @@
 /**
- * Tests for the profile page.
+ * Tests for the profile page (includes log steps form + history).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -93,6 +93,7 @@ describe("profile page", () => {
           miles_club_tier: "high", miles_club_average_daily: 12_000,
         };
       }
+      if (path === "/steps/") return [];
       if (path === "/challenges/") return [];
       return [];
     });
@@ -119,6 +120,7 @@ describe("profile page", () => {
           miles_club_tier: "mid", miles_club_average_daily: 7_500,
         };
       }
+      if (path === "/steps/") return [];
       if (path === "/challenges/") return [];
       return [];
     });
@@ -144,6 +146,7 @@ describe("profile page", () => {
           miles_club_tier: "low", miles_club_average_daily: 2_000,
         };
       }
+      if (path === "/steps/") return [];
       if (path === "/challenges/") return [];
       return [];
     });
@@ -169,6 +172,7 @@ describe("profile page", () => {
           miles_club_tier: "high", miles_club_average_daily: 10_000,
         };
       }
+      if (path === "/steps/") return [];
       if (path === "/challenges/") return [];
       return [];
     });
@@ -212,6 +216,7 @@ describe("profile page", () => {
           days_logged: 10, average_daily: 5_000, miles_club_tier: "mid",
         };
       }
+      if (path === "/steps/") return [];
       if (path.startsWith("/steps/")) return [];
       return [];
     });
@@ -269,5 +274,72 @@ describe("profile page", () => {
 
     expect(container.innerHTML).toContain("Change Photo");
     expect(container.querySelector("#remove-photo-btn")).not.toBeNull();
+  });
+
+  // --- Log Steps form (merged into profile) ---
+
+  it("renders log steps form alongside profile", async () => {
+    mockIsAuth.mockReturnValue(true);
+    mockGetUser.mockReturnValue(TEST_USER);
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/steps/") return [];
+      throw new Error("network");
+    });
+
+    await renderProfile(container);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(container.querySelector("#log-form")).not.toBeNull();
+    expect(container.innerHTML).toContain("Log Steps");
+    expect(container.innerHTML).toContain("Step History");
+  });
+
+  it("shows step history in profile page", async () => {
+    mockIsAuth.mockReturnValue(true);
+    mockGetUser.mockReturnValue(TEST_USER);
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/steps/") {
+        return [
+          { id: 1, user_id: 1, date: "2026-04-15", step_count: 10000, source: "manual" },
+          { id: 2, user_id: 1, date: "2026-04-14", step_count: 8000, source: "manual" },
+        ];
+      }
+      throw new Error("network");
+    });
+
+    await renderProfile(container);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(container.innerHTML).toContain("10,000");
+    expect(container.innerHTML).toContain("8,000");
+  });
+
+  it("shows edit and delete buttons for manual entries in profile", async () => {
+    mockIsAuth.mockReturnValue(true);
+    mockGetUser.mockReturnValue(TEST_USER);
+    mockApiFetch.mockImplementation(async (path: string) => {
+      if (path === "/steps/") {
+        return [{ id: 1, user_id: 1, date: "2026-04-15", step_count: 10000, source: "manual" }];
+      }
+      throw new Error("network");
+    });
+
+    await renderProfile(container);
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(container.querySelectorAll(".edit-btn").length).toBe(1);
+    expect(container.querySelectorAll(".delete-btn").length).toBe(1);
+  });
+
+  it("uses two-column layout", async () => {
+    mockIsAuth.mockReturnValue(true);
+    mockGetUser.mockReturnValue(TEST_USER);
+    mockApiFetch.mockRejectedValue(new Error("network"));
+
+    await renderProfile(container);
+
+    expect(container.querySelector(".profile-columns")).not.toBeNull();
+    expect(container.querySelector(".profile-col-left")).not.toBeNull();
+    expect(container.querySelector(".profile-col-right")).not.toBeNull();
   });
 });

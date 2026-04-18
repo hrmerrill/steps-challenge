@@ -121,7 +121,7 @@ export async function renderLeaderboard(
         <div class="${rowClass}">
           <span class="leaderboard-rank">${e.rank}</span>
           ${avatarHtml(e.profile_photo_url, e.display_name)}
-          <span class="leaderboard-name">${e.display_name}${youTag} ${tierBadgeHtml(e.miles_club_tier)}</span>
+          <span class="leaderboard-name"><a href="#/profile" class="leaderboard-name-link">${e.display_name}</a>${youTag} ${tierBadgeHtml(e.miles_club_tier)}</span>
           <span class="leaderboard-steps">${formatSteps(e.total_steps)} steps</span>
         </div>
       `;

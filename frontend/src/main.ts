@@ -8,7 +8,6 @@ import { addRoute, initRouter } from "./router";
 import { renderLanding } from "./pages/landing";
 import { renderLogin } from "./pages/login";
 import { renderRegister } from "./pages/register";
-import { renderLogSteps } from "./pages/log-steps";
 import { renderProfile } from "./pages/profile";
 import { isAuthenticated, fetchMe } from "./auth";
 import { isSiteAuthed, showGate } from "./site-gate";
@@ -60,7 +59,6 @@ async function boot(): Promise<void> {
   addRoute("/", withNav(renderLanding));
   addRoute("/login", withNav(renderLogin));
   addRoute("/register", withNav(renderRegister));
-  addRoute("/log", withNav(renderLogSteps));
   addRoute("/profile", withNav(renderProfile));
 
   initRouter(contentEl);

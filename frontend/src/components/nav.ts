@@ -18,7 +18,6 @@ export function renderNav(container: HTMLElement): void {
       <ul class="nav-links" id="nav-links">
         ${authed ? `
           <li><a href="#/">Dashboard</a></li>
-          <li><a href="#/log">Log Steps</a></li>
           <li><a href="#/profile" class="nav-user">${user?.display_name ?? "User"}</a></li>
           <li><button class="btn btn-secondary" id="logout-btn">Logout</button></li>
         ` : `
