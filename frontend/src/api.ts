@@ -50,6 +50,10 @@ export async function apiFetch<T = unknown>(
   });
 
   if (!resp.ok) {
+    if (resp.status === 401) {
+      setToken(null);
+      window.location.hash = "#/login";
+    }
     const errorBody = await resp.json().catch(() => ({}));
     throw new ApiError(resp.status, errorBody.detail ?? resp.statusText);
   }
@@ -93,6 +97,10 @@ export async function apiUpload<T = unknown>(
   });
 
   if (!resp.ok) {
+    if (resp.status === 401) {
+      setToken(null);
+      window.location.hash = "#/login";
+    }
     const errorBody = await resp.json().catch(() => ({}));
     throw new ApiError(resp.status, errorBody.detail ?? resp.statusText);
   }

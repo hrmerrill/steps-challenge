@@ -9,7 +9,7 @@ import { renderLanding } from "./pages/landing";
 import { renderLogin } from "./pages/login";
 import { renderRegister } from "./pages/register";
 import { renderProfile } from "./pages/profile";
-import { isAuthenticated, fetchMe } from "./auth";
+import { isAuthenticated, fetchMe, logout } from "./auth";
 import { isSiteAuthed, showGate } from "./site-gate";
 import "./styles/global.css";
 import "./styles/cards.css";
@@ -44,7 +44,8 @@ async function boot(): Promise<void> {
     try {
       await fetchMe();
     } catch {
-      // Token expired — will redirect to login
+      // Token expired or invalid — clear cached state
+      logout();
     }
   }
 
