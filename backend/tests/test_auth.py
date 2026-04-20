@@ -121,3 +121,25 @@ class TestMe:
     def test_me_invalid_token(self, client):
         resp = client.get("/auth/me", headers={"Authorization": "Bearer invalid.jwt.token"})
         assert resp.status_code == 401
+
+
+class TestTokenExpiry:
+    def test_default_jwt_expiry_is_30_days(self):
+        from app.config import settings
+        assert settings.jwt_expire_minutes == 60 * 24 * 30
+
+    def test_expired_token_returns_401(self, client):
+        """A token issued with an already-past expiry must be rejected."""
+        from datetime import datetime, timedelta, timezone
+        from jose import jwt as jose_jwt
+        from app.config import settings
+
+        expired_payload = {
+            "sub": "1",
+            "exp": datetime.now(timezone.utc) - timedelta(seconds=10),
+        }
+        expired_token = jose_jwt.encode(
+            expired_payload, settings.jwt_secret, algorithm=settings.jwt_algorithm,
+        )
+        resp = client.get("/auth/me", headers={"Authorization": f"Bearer {expired_token}"})
+        assert resp.status_code == 401

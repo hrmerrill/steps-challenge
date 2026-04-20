@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     # JWT auth
     jwt_secret: str = _DEFAULT_JWT_SECRET
     jwt_algorithm: Literal["HS256"] = "HS256"
-    jwt_expire_minutes: int = 60 * 24  # 24 hours
+    jwt_expire_minutes: int = 60 * 24 * 30  # 30 days
 
     # CORS — comma-separated origins (e.g. "https://app.example.com,http://localhost:5173")
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
@@ -73,7 +73,7 @@ def _build_settings() -> "Settings":
             jwt_secret=_DEFAULT_JWT_SECRET,
             jwt_algorithm="HS256",
             database_url="sqlite:///:memory:",
-            jwt_expire_minutes=60 * 24,
+            jwt_expire_minutes=60 * 24 * 30,
             cors_origins="http://localhost:5173,http://localhost:3000",
             miles_club_high=10_000,
             miles_club_mid=5_000,
