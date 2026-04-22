@@ -278,6 +278,18 @@
   transform: scale(1.1);
 }
 
+/* --- Leaderboard Scrollable Card --- */
+.card--leaderboard {
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-scroll {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
 /* --- Leaderboard Table --- */
 .leaderboard-row {
   display: flex;

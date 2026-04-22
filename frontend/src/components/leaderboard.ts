@@ -129,9 +129,11 @@ export async function renderLeaderboard(
       .join("");
 
     container.innerHTML = `
-      <div class="card">
+      <div class="card card--leaderboard">
         <div class="card-header"><h3 class="card-title">Leaderboard</h3></div>
-        ${rows}
+        <div class="leaderboard-scroll">
+          ${rows}
+        </div>
       </div>
     `;
 
