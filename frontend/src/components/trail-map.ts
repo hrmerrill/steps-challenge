@@ -1,7 +1,8 @@
 /**
  * Trail map component — Leaflet.js integration for virtual trail progress.
  *
- * Renders an OpenStreetMap with the trail route and a progress marker.
+ * Loads the actual Appalachian Trail GeoJSON (sourced from OpenStreetMap) and
+ * renders it on an OpenTopoMap with a distance-aware progress marker.
  */
 
 import { apiFetch } from "../api";
@@ -14,41 +15,100 @@ export interface TrailProgress {
   progress_percent: number;
 }
 
-// Simplified Appalachian Trail waypoints (start → end)
-// Springer Mountain, GA to Mount Katahdin, ME
-export const APPALACHIAN_TRAIL_POINTS: [number, number][] = [
-  [34.6267, -84.1938], // Springer Mountain, GA
-  [35.2117, -83.5417], // Fontana Dam, NC
-  [35.7117, -83.5133], // Clingmans Dome, TN/NC
-  [36.6333, -81.5167], // Damascus, VA
-  [37.7833, -79.4500], // Rockfish Gap, VA
-  [39.3283, -77.7417], // Harpers Ferry, WV
-  [40.9667, -75.1167], // Delaware Water Gap, PA
-  [41.5275, -74.0361], // Bear Mountain, NY
-  [42.6833, -73.1667], // Bennington, VT
-  [44.2706, -71.3033], // White Mountains, NH
-  [45.9044, -68.9214], // Mount Katahdin, ME
-];
+/** GeoJSON types used for the trail data. */
+interface TrailGeoJSON {
+  type: "FeatureCollection";
+  features: Array<{
+    type: "Feature";
+    properties: Record<string, unknown>;
+    geometry: { type: "LineString"; coordinates: [number, number][] };
+  }>;
+}
 
-/** Interpolate position along the trail based on progress percentage. */
+/**
+ * Load the trail GeoJSON and return coordinates as [lat, lng] pairs.
+ * GeoJSON stores [lng, lat]; Leaflet expects [lat, lng].
+ */
+export async function loadTrailCoordinates(): Promise<[number, number][]> {
+  const resp = await fetch("/appalachian-trail.geojson");
+  if (!resp.ok) throw new Error(`Failed to load trail GeoJSON: ${resp.status}`);
+  const geojson: TrailGeoJSON = await resp.json();
+  const coords: [number, number][] = [];
+  for (const feature of geojson.features) {
+    if (feature.geometry.type === "LineString") {
+      for (const [lng, lat] of feature.geometry.coordinates) {
+        coords.push([lat, lng]);
+      }
+    }
+  }
+  return coords;
+}
+
+/** Haversine distance between two [lat, lng] points, in miles. */
+export function haversineDistance(
+  a: [number, number],
+  b: [number, number],
+): number {
+  const R = 3958.8; // Earth radius in miles
+  const toRad = Math.PI / 180;
+  const dLat = (b[0] - a[0]) * toRad;
+  const dLng = (b[1] - a[1]) * toRad;
+  const sinLat = Math.sin(dLat / 2);
+  const sinLng = Math.sin(dLng / 2);
+  const h =
+    sinLat * sinLat +
+    Math.cos(a[0] * toRad) * Math.cos(b[0] * toRad) * sinLng * sinLng;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+/** Compute cumulative distances (in miles) along a polyline. */
+export function computeCumulativeDistances(
+  points: [number, number][],
+): number[] {
+  const d = [0];
+  for (let i = 1; i < points.length; i++) {
+    d.push(d[i - 1] + haversineDistance(points[i - 1], points[i]));
+  }
+  return d;
+}
+
+/**
+ * Distance-aware interpolation along a polyline.
+ *
+ * Maps `progressPercent` (0–100) to a [lat, lng] position by computing the
+ * proportional distance along the trail rather than the proportional segment
+ * index. This ensures the marker moves at a geographically accurate pace.
+ *
+ * Pass pre-computed `cumulativeDistances` to avoid recalculating each call.
+ */
 export function interpolatePosition(
   points: [number, number][],
   progressPercent: number,
+  cumulativeDistances?: number[],
 ): [number, number] {
+  if (points.length === 0) return [0, 0];
   if (progressPercent <= 0) return points[0];
   if (progressPercent >= 100) return points[points.length - 1];
 
-  const totalSegments = points.length - 1;
-  const position = (progressPercent / 100) * totalSegments;
-  const segmentIndex = Math.floor(position);
-  const segmentProgress = position - segmentIndex;
+  const cumDist = cumulativeDistances ?? computeCumulativeDistances(points);
+  const totalDist = cumDist[cumDist.length - 1];
+  const target = (progressPercent / 100) * totalDist;
 
-  const start = points[segmentIndex];
-  const end = points[Math.min(segmentIndex + 1, points.length - 1)];
+  // Binary search for the segment containing the target distance
+  let lo = 0;
+  let hi = cumDist.length - 1;
+  while (lo < hi - 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (cumDist[mid] <= target) lo = mid;
+    else hi = mid;
+  }
+
+  const segLen = cumDist[hi] - cumDist[lo];
+  const t = segLen > 0 ? (target - cumDist[lo]) / segLen : 0;
 
   return [
-    start[0] + (end[0] - start[0]) * segmentProgress,
-    start[1] + (end[1] - start[1]) * segmentProgress,
+    points[lo][0] + (points[hi][0] - points[lo][0]) * t,
+    points[lo][1] + (points[hi][1] - points[lo][1]) * t,
   ];
 }
 
@@ -58,10 +118,16 @@ export async function renderTrailMap(
   challengeId: number | "overall",
 ): Promise<void> {
   try {
-    const url = challengeId === "overall"
-      ? "/leaderboard/overall/trail"
-      : `/leaderboard/${challengeId}/trail`;
-    const progress = await apiFetch<TrailProgress>(url);
+    const url =
+      challengeId === "overall"
+        ? "/leaderboard/overall/trail"
+        : `/leaderboard/${challengeId}/trail`;
+
+    // Fetch progress data and trail GeoJSON in parallel
+    const [progress, trailCoords] = await Promise.all([
+      apiFetch<TrailProgress>(url),
+      loadTrailCoordinates(),
+    ]);
 
     container.innerHTML = `
       <div class="card">
@@ -73,7 +139,6 @@ export async function renderTrailMap(
       </div>
     `;
 
-    // Initialize Leaflet map if available
     const L = (window as any).L;
     if (!L) {
       container.querySelector("#trail-map")!.innerHTML =
@@ -83,27 +148,30 @@ export async function renderTrailMap(
 
     const map = L.map("trail-map").setView([39.0, -77.5], 5);
     L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
-      attribution: '© <a href="https://opentopomap.org">OpenTopoMap</a> contributors',
+      attribution:
+        '© <a href="https://opentopomap.org">OpenTopoMap</a> · Trail data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       maxZoom: 17,
     }).addTo(map);
 
-    // Draw trail polyline
-    L.polyline(APPALACHIAN_TRAIL_POINTS, {
+    // Draw the actual trail path
+    L.polyline(trailCoords, {
       color: "#4f46e5",
       weight: 3,
       opacity: 0.6,
     }).addTo(map);
 
-    // Add start and end markers
-    L.marker(APPALACHIAN_TRAIL_POINTS[0]).addTo(map).bindPopup("Start: Springer Mountain, GA");
-    L.marker(APPALACHIAN_TRAIL_POINTS[APPALACHIAN_TRAIL_POINTS.length - 1])
-      .addTo(map)
-      .bindPopup("End: Mount Katahdin, ME");
+    // Start and end markers
+    const start = trailCoords[0];
+    const end = trailCoords[trailCoords.length - 1];
+    L.marker(start).addTo(map).bindPopup("Start: Springer Mountain, GA");
+    L.marker(end).addTo(map).bindPopup("End: Mount Katahdin, ME");
 
-    // Progress marker
+    // Progress marker (distance-aware)
+    const cumDist = computeCumulativeDistances(trailCoords);
     const pos = interpolatePosition(
-      APPALACHIAN_TRAIL_POINTS,
+      trailCoords,
       progress.progress_percent,
+      cumDist,
     );
     L.circleMarker(pos, {
       radius: 10,
