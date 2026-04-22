@@ -67,14 +67,6 @@
 @media (min-width: 768px) {
   .card-grid--wide {
     grid-template-columns: 2fr 1fr;
-  }
-
-  .card-grid--wide > * {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .card-grid--wide > * > .card {
-    flex: 1;
+    align-items: start;
   }
 }
