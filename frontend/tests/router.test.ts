@@ -18,6 +18,16 @@ describe("Router", () => {
     expect(currentRoute()).toBe("/login");
   });
 
+  it("strips query parameters from hash", () => {
+    window.location.hash = "#/profile?google_health=connected";
+    expect(currentRoute()).toBe("/profile");
+  });
+
+  it("handles hash with multiple query parameters", () => {
+    window.location.hash = "#/profile?a=1&b=2";
+    expect(currentRoute()).toBe("/profile");
+  });
+
   it("navigate sets the hash", () => {
     navigate("/register");
     expect(window.location.hash).toBe("#/register");

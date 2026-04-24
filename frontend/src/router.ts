@@ -17,9 +17,11 @@ export function navigate(path: string): void {
   window.location.hash = path;
 }
 
-/** Get current route path from hash. */
+/** Get current route path from hash (strips query parameters). */
 export function currentRoute(): string {
-  return window.location.hash.slice(1) || "/";
+  const hash = window.location.hash.slice(1) || "/";
+  const queryIndex = hash.indexOf("?");
+  return queryIndex === -1 ? hash : hash.slice(0, queryIndex);
 }
 
 /** Initialize the router — listens to hashchange events. */
