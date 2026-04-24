@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 # Google OAuth 2.0 / Health API endpoints
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
-GOOGLE_HEALTH_API_BASE = "https://www.googleapis.com/fitness/v1"
+GOOGLE_HEALTH_API_BASE = "https://health.googleapis.com/v4"
 
-# Scopes needed: read activity data (includes steps)
-GOOGLE_HEALTH_SCOPES = "https://www.googleapis.com/auth/fitness.activity.read"
+# Scopes needed: read-only access to activity & fitness data (includes steps)
+GOOGLE_HEALTH_SCOPES = "https://www.googleapis.com/auth/googlehealth.activity_and_fitness.readonly"
 
 
 def is_google_health_configured() -> bool:
@@ -152,52 +152,84 @@ async def fetch_daily_steps(
 ) -> SyncResult:
     """Fetch daily step totals from the Google Health API for a date range.
 
-    Uses the dataset aggregate endpoint:
-    POST /users/me/dataset:aggregate
+    Uses the dailyRollUp endpoint:
+    POST /v4/users/me/dataTypes/steps/dataPoints:dailyRollUp
 
     Returns a list of {date: str, step_count: int} dicts.
-    Max range: 30 days per request.
+    Max range: 90 days per request (API limit).
     """
-    if (end_date - start_date).days > 30:
-        return SyncResult(error="Date range cannot exceed 30 days")
+    if (end_date - start_date).days > 90:
+        return SyncResult(error="Date range cannot exceed 90 days")
 
-    # Convert dates to epoch milliseconds for the Google Fitness API
-    start_ms = int(datetime.datetime.combine(start_date, datetime.time.min).timestamp() * 1000)
-    end_ms = int(datetime.datetime.combine(end_date, datetime.time.max).timestamp() * 1000)
+    url = f"{GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/steps/dataPoints:dailyRollUp"
 
-    url = f"{GOOGLE_HEALTH_API_BASE}/users/me/dataset:aggregate"
+    # The API uses CivilDateTime objects with an IANA time zone.
+    # end_date is exclusive, so add one day to include the final date.
+    exclusive_end = end_date + datetime.timedelta(days=1)
+
+    request_body: dict = {
+        "range": {
+            "start": {
+                "year": start_date.year,
+                "month": start_date.month,
+                "day": start_date.day,
+                "hours": 0,
+                "minutes": 0,
+                "seconds": 0,
+            },
+            "end": {
+                "year": exclusive_end.year,
+                "month": exclusive_end.month,
+                "day": exclusive_end.day,
+                "hours": 0,
+                "minutes": 0,
+                "seconds": 0,
+            },
+        },
+        "windowSizeDays": 1,
+    }
 
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.post(
-                url,
-                headers={
-                    "Authorization": f"Bearer {access_token}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "aggregateBy": [{"dataTypeName": "com.google.step_count.delta"}],
-                    "bucketByTime": {"durationMillis": 86400000},  # 1 day
-                    "startTimeMillis": start_ms,
-                    "endTimeMillis": end_ms,
-                },
-            )
-            response.raise_for_status()
-            data = response.json()
+            steps: list[dict] = []
+            page_token: str | None = None
 
-            steps = []
-            for bucket in data.get("bucket", []):
-                bucket_start = int(bucket["startTimeMillis"]) / 1000
-                bucket_date = datetime.datetime.fromtimestamp(bucket_start).date().isoformat()
-                for dataset in bucket.get("dataset", []):
-                    for point in dataset.get("point", []):
-                        for val in point.get("value", []):
-                            step_count = val.get("intVal", 0)
-                            if step_count > 0:
-                                steps.append({
-                                    "date": bucket_date,
-                                    "step_count": step_count,
-                                })
+            while True:
+                body = {**request_body}
+                if page_token:
+                    body["pageToken"] = page_token
+
+                response = await client.post(
+                    url,
+                    headers={
+                        "Authorization": f"Bearer {access_token}",
+                        "Content-Type": "application/json",
+                    },
+                    json=body,
+                )
+                response.raise_for_status()
+                data = response.json()
+
+                for point in data.get("rollupDataPoints", []):
+                    civil_start = point.get("civilStartTime", {})
+                    year = civil_start.get("year")
+                    month = civil_start.get("month")
+                    day = civil_start.get("day")
+                    if not (year and month and day):
+                        continue
+
+                    step_value = point.get("steps", {})
+                    count_sum = int(step_value.get("countSum", 0))
+                    if count_sum > 0:
+                        point_date = datetime.date(year, month, day).isoformat()
+                        steps.append({
+                            "date": point_date,
+                            "step_count": count_sum,
+                        })
+
+                page_token = data.get("nextPageToken")
+                if not page_token:
+                    break
 
             return SyncResult(steps=steps)
 
@@ -210,7 +242,7 @@ async def fetch_daily_steps(
                 return SyncResult(
                     error=(
                         "Google Health API error: 403 Forbidden. "
-                        "Ensure the Fitness API is enabled in your Google Cloud Console "
+                        "Ensure the Google Health API is enabled in your Google Cloud Console "
                         "and the required scopes were granted during authorization."
                     ),
                     status_code=403,

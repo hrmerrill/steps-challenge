@@ -77,7 +77,7 @@ async def google_health_callback(
 
 @router.post("/sync")
 async def sync_google_health_steps(
-    days: int = Query(default=30, ge=1, le=30, description="Number of past days to sync"),
+    days: int = Query(default=30, ge=1, le=90, description="Number of past days to sync"),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):

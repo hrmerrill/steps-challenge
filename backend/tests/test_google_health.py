@@ -3,6 +3,7 @@
 import datetime
 from unittest.mock import AsyncMock, patch
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -39,6 +40,109 @@ def _add_steps(db, user_id, date_str, step_count, source=StepSource.MANUAL):
     db.add(entry)
     db.commit()
     return entry
+
+
+# ── Google Health API response parsing tests ──
+
+
+class TestFetchDailyStepsResponseParsing:
+    """Test that fetch_daily_steps correctly calls the Google Health API
+    dailyRollUp endpoint and parses its response format."""
+
+    @pytest.mark.asyncio
+    async def test_parses_daily_rollup_response(self):
+        """Correctly parses the Google Health API dailyRollUp response."""
+        from app.services.google_health import fetch_daily_steps
+
+        mock_response = httpx.Response(
+            200,
+            json={
+                "rollupDataPoints": [
+                    {
+                        "civilStartTime": {"year": 2026, "month": 4, "day": 10, "hours": 0, "minutes": 0, "seconds": 0},
+                        "civilEndTime": {"year": 2026, "month": 4, "day": 11, "hours": 0, "minutes": 0, "seconds": 0},
+                        "steps": {"countSum": "8500"},
+                    },
+                    {
+                        "civilStartTime": {"year": 2026, "month": 4, "day": 11, "hours": 0, "minutes": 0, "seconds": 0},
+                        "civilEndTime": {"year": 2026, "month": 4, "day": 12, "hours": 0, "minutes": 0, "seconds": 0},
+                        "steps": {"countSum": "12000"},
+                    },
+                ]
+            },
+            request=httpx.Request("POST", "https://health.googleapis.com/v4/users/me/dataTypes/steps/dataPoints:dailyRollUp"),
+        )
+
+        with patch("app.services.google_health.httpx.AsyncClient") as MockClient:
+            mock_client = AsyncMock()
+            mock_client.post.return_value = mock_response
+            MockClient.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            result = await fetch_daily_steps(
+                "fake-token",
+                datetime.date(2026, 4, 10),
+                datetime.date(2026, 4, 12),
+            )
+
+        assert result.success
+        assert len(result.steps) == 2
+        assert result.steps[0] == {"date": "2026-04-10", "step_count": 8500}
+        assert result.steps[1] == {"date": "2026-04-11", "step_count": 12000}
+
+        # Verify the request was made to the correct URL
+        call_args = mock_client.post.call_args
+        assert "health.googleapis.com" in call_args.args[0]
+        assert "dailyRollUp" in call_args.args[0]
+
+    @pytest.mark.asyncio
+    async def test_skips_zero_step_days(self):
+        """Days with zero steps are excluded from results."""
+        from app.services.google_health import fetch_daily_steps
+
+        mock_response = httpx.Response(
+            200,
+            json={
+                "rollupDataPoints": [
+                    {
+                        "civilStartTime": {"year": 2026, "month": 4, "day": 10},
+                        "civilEndTime": {"year": 2026, "month": 4, "day": 11},
+                        "steps": {"countSum": "0"},
+                    },
+                    {
+                        "civilStartTime": {"year": 2026, "month": 4, "day": 11},
+                        "civilEndTime": {"year": 2026, "month": 4, "day": 12},
+                        "steps": {"countSum": "5000"},
+                    },
+                ]
+            },
+            request=httpx.Request("POST", "https://health.googleapis.com/v4/test"),
+        )
+
+        with patch("app.services.google_health.httpx.AsyncClient") as MockClient:
+            mock_client = AsyncMock()
+            mock_client.post.return_value = mock_response
+            MockClient.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            result = await fetch_daily_steps("fake-token", datetime.date(2026, 4, 10), datetime.date(2026, 4, 12))
+
+        assert result.success
+        assert len(result.steps) == 1
+        assert result.steps[0]["step_count"] == 5000
+
+    @pytest.mark.asyncio
+    async def test_rejects_range_over_90_days(self):
+        """Ranges over 90 days are rejected."""
+        from app.services.google_health import fetch_daily_steps
+
+        result = await fetch_daily_steps(
+            "fake-token",
+            datetime.date(2026, 1, 1),
+            datetime.date(2026, 5, 1),
+        )
+        assert not result.success
+        assert "90 days" in result.error
 
 
 # ── Data model tests ──
