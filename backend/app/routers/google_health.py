@@ -172,6 +172,6 @@ def google_health_status(user: User = Depends(get_current_user)):
     """Return Google Health connection status."""
     return {
         "configured": is_google_health_configured(),
-        "connected": user.google_health_token is not None,
+        "connected": bool(user.google_health_token),
         "preferred_step_source": user.preferred_step_source.value,
     }

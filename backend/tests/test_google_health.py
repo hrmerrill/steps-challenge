@@ -387,6 +387,16 @@ class TestGoogleHealthRouter:
         resp = client.post("/google-health/sync", headers=_auth_header(token))
         assert resp.status_code == 400
 
+    def test_status_empty_token_shows_not_connected(self, client, db_session):
+        """Status reports connected=false when token is an empty string."""
+        user, token = _create_user(db_session)
+        user.google_health_token = ""
+        db_session.commit()
+
+        resp = client.get("/google-health/status", headers=_auth_header(token))
+        assert resp.status_code == 200
+        assert resp.json()["connected"] is False
+
     def test_disconnect(self, client, db_session):
         """Disconnect clears tokens and reverts preferred source."""
         user, token = _create_user(db_session)
