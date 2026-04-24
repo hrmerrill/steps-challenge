@@ -100,6 +100,14 @@ class TestFetchDailyStepsResponseParsing:
         assert "timeZone" in request_body["range"]["start"]
         assert "timeZone" in request_body["range"]["end"]
 
+        # Verify correct CivilDateTime field names (plural: hours, minutes, seconds)
+        for endpoint in ("start", "end"):
+            dt = request_body["range"][endpoint]
+            assert "hours" in dt, f"Expected 'hours' (plural) in {endpoint}, got {list(dt.keys())}"
+            assert "minutes" in dt
+            assert "seconds" in dt
+            assert "hour" not in dt, "Should use 'hours' (plural), not 'hour'"
+
     @pytest.mark.asyncio
     async def test_skips_zero_step_days(self):
         """Days with zero steps are excluded from results."""
