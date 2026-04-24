@@ -234,14 +234,18 @@ class TestGoogleHealthRouter:
     @patch("app.routers.google_health.is_google_health_configured", return_value=True)
     @patch("app.routers.google_health.exchange_code_for_tokens")
     def test_callback_stores_tokens(self, mock_exchange, mock_configured, client, db_session):
-        """OAuth callback stores tokens and sets preferred source."""
+        """OAuth callback stores tokens, sets preferred source, and redirects to profile."""
         from app.services.google_health import TokenResult
         mock_exchange.return_value = TokenResult(access_token="access123", refresh_token="refresh456")
 
         user, token = _create_user(db_session)
-        resp = client.get(f"/google-health/callback?code=authcode123&state={token}")
-        assert resp.status_code == 200
-        assert resp.json()["connected"] is True
+        resp = client.get(
+            f"/google-health/callback?code=authcode123&state={token}",
+            follow_redirects=False,
+        )
+        assert resp.status_code == 302
+        assert "/#/profile" in resp.headers["location"]
+        assert "google_health=connected" in resp.headers["location"]
 
         db_session.refresh(user)
         assert user.google_health_token == "access123"

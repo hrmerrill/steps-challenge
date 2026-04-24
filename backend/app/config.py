@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     max_photo_size: int = 5 * 1024 * 1024  # 5 MB
     allowed_photo_types: str = "image/jpeg,image/png,image/webp,image/gif"
 
+    # Frontend URL — used for OAuth redirects back to the SPA
+    frontend_url: str = "http://localhost:5173"
+
     # Google Health API OAuth (optional — leave empty to disable Google Health features)
     google_client_id: str = ""
     google_client_secret: str = ""
@@ -88,6 +91,7 @@ def _build_settings() -> "Settings":
             allowed_photo_types="image/jpeg,image/png,image/webp,image/gif",
             app_name="Steps Challenge",
             debug=False,
+            frontend_url="http://localhost:5173",
             google_client_id="",
             google_client_secret="",
             google_redirect_uri="",

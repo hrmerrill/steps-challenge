@@ -4,8 +4,10 @@ import datetime
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.models.steps import DailySteps, StepSource
 from app.models.user import User
@@ -69,7 +71,8 @@ async def google_health_callback(
     user.preferred_step_source = StepSource.GOOGLE_HEALTH
     db.commit()
 
-    return {"connected": True, "preferred_step_source": "google_health"}
+    redirect_url = f"{settings.frontend_url.rstrip('/')}/#/profile?google_health=connected"
+    return RedirectResponse(url=redirect_url, status_code=status.HTTP_302_FOUND)
 
 
 @router.post("/sync")
