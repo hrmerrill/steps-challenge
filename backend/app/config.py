@@ -1,10 +1,16 @@
 """Application configuration loaded from environment variables."""
 
 import warnings
+from pathlib import Path
 from typing import Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+# Resolve .env relative to the backend/ directory (parent of app/)
+# so it works regardless of the process working directory.
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_ENV_FILE = _BACKEND_DIR / ".env"
 
 _DEFAULT_JWT_SECRET = "CHANGE-ME-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
@@ -50,7 +56,7 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = ""
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    model_config = {"env_file": str(_ENV_FILE), "env_file_encoding": "utf-8"}
 
     @field_validator("jwt_secret")
     @classmethod
