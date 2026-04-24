@@ -42,6 +42,11 @@ class Settings(BaseSettings):
     max_photo_size: int = 5 * 1024 * 1024  # 5 MB
     allowed_photo_types: str = "image/jpeg,image/png,image/webp,image/gif"
 
+    # Google Health API OAuth (optional — leave empty to disable Google Health features)
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
     @field_validator("jwt_secret")
@@ -83,6 +88,9 @@ def _build_settings() -> "Settings":
             allowed_photo_types="image/jpeg,image/png,image/webp,image/gif",
             app_name="Steps Challenge",
             debug=False,
+            google_client_id="",
+            google_client_secret="",
+            google_redirect_uri="",
         )
 
 

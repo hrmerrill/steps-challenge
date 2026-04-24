@@ -3,7 +3,7 @@
 ## Project Overview
 
 This is a **Steps Challenge** webapp for group step competitions. Monthly challenges where
-participants track daily steps via fitness tracker sync (Garmin, Strava, Fitbit) or manual entry.
+participants track daily steps via fitness tracker sync (Garmin, Strava, Google Health API) or manual entry.
 Features a leaderboard, "miles clubs" (tiers based on prior month steps), and a virtual trail map
 showing collective progress.
 
@@ -80,7 +80,7 @@ Thresholds are configurable via environment variables.
 ### Auth Flow
 - Email/password registration → bcrypt hash → JWT token
 - JWT passed via `Authorization: Bearer <token>` header
-- Provider sync (Garmin/Strava/Fitbit) uses OAuth — stubs in v1
+- Provider sync (Garmin/Strava/Google Health API) uses OAuth — stubs in v1
 
 ## Running Locally
 

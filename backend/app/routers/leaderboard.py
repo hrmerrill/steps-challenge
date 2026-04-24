@@ -11,6 +11,7 @@ from app.models.user import User
 from app.schemas.challenge import LeaderboardEntry, OverallTeamStats, OverallUserStats, TrailProgress
 from app.services.auth import get_current_user
 from app.services.miles_clubs import get_bulk_user_tiers, get_user_tier
+from app.services.steps_query import effective_steps_filter
 from app.services.trail import calculate_trail_progress, steps_to_miles
 
 router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
@@ -29,7 +30,7 @@ def get_overall_leaderboard(db: Session = Depends(get_db)):
             User.profile_photo_url,
             func.coalesce(func.sum(DailySteps.step_count), 0).label("total_steps"),
         )
-        .outerjoin(DailySteps, DailySteps.user_id == User.id)
+        .outerjoin(DailySteps, (DailySteps.user_id == User.id) & effective_steps_filter())
         .group_by(User.id, User.display_name, User.profile_photo_url)
         .having(func.coalesce(func.sum(DailySteps.step_count), 0) > 0)
         .order_by(func.coalesce(func.sum(DailySteps.step_count), 0).desc())
@@ -60,7 +61,9 @@ def get_overall_trail_progress(
 ):
     """Get trail progress using all-time steps from all users."""
     total_steps = (
-        db.query(func.coalesce(func.sum(DailySteps.step_count), 0)).scalar()
+        db.query(func.coalesce(func.sum(DailySteps.step_count), 0))
+        .filter(effective_steps_filter())
+        .scalar()
     )
     return calculate_trail_progress(total_steps, trail)
 
@@ -73,13 +76,16 @@ def get_overall_team_stats(db: Session = Depends(get_db)):
             func.coalesce(func.sum(DailySteps.step_count), 0).label("total"),
             func.count(DailySteps.id).label("days"),
         )
+        .filter(effective_steps_filter())
         .one()
     )
     total_steps = int(agg.total)
     total_days = int(agg.days)
 
     total_users = (
-        db.query(func.count(func.distinct(DailySteps.user_id))).scalar() or 0
+        db.query(func.count(func.distinct(DailySteps.user_id)))
+        .filter(effective_steps_filter())
+        .scalar() or 0
     )
 
     avg_daily = round(total_steps / total_days, 1) if total_days > 0 else 0.0
@@ -104,7 +110,7 @@ def get_overall_my_stats(
             func.coalesce(func.sum(DailySteps.step_count), 0).label("total"),
             func.count(DailySteps.id).label("days"),
         )
-        .filter(DailySteps.user_id == user.id)
+        .filter(DailySteps.user_id == user.id, effective_steps_filter())
         .one()
     )
     total_steps = int(user_agg.total)
@@ -114,7 +120,7 @@ def get_overall_my_stats(
     users_above = (
         db.query(func.count())
         .select_from(User)
-        .outerjoin(DailySteps, DailySteps.user_id == User.id)
+        .outerjoin(DailySteps, (DailySteps.user_id == User.id) & effective_steps_filter())
         .group_by(User.id)
         .having(func.coalesce(func.sum(DailySteps.step_count), 0) > total_steps)
         .subquery()
@@ -123,7 +129,9 @@ def get_overall_my_stats(
 
     # Total users who have logged at least one step
     total_users = (
-        db.query(func.count(func.distinct(DailySteps.user_id))).scalar()
+        db.query(func.count(func.distinct(DailySteps.user_id)))
+        .filter(effective_steps_filter())
+        .scalar()
     )
     # Ensure current user is counted even with 0 steps
     if total_steps == 0 and total_users > 0:
@@ -172,7 +180,8 @@ def get_leaderboard(challenge_id: int = Path(gt=0), db: Session = Depends(get_db
             DailySteps,
             (DailySteps.user_id == User.id)
             & (DailySteps.date >= challenge.start_date)
-            & (DailySteps.date <= challenge.end_date),
+            & (DailySteps.date <= challenge.end_date)
+            & effective_steps_filter(),
         )
         .filter(ChallengeParticipant.challenge_id == challenge_id)
         .group_by(User.id, User.display_name, User.profile_photo_url)
@@ -222,6 +231,7 @@ def get_trail_progress(
             DailySteps.user_id.in_(db.query(participants.c.user_id)),
             DailySteps.date >= challenge.start_date,
             DailySteps.date <= challenge.end_date,
+            effective_steps_filter(),
         )
         .scalar()
     )

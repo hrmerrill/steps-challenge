@@ -104,7 +104,7 @@ async function loadHistory(historyEl: HTMLElement): Promise<void> {
         <span class="step-history-source badge ${e.source === "manual" ? "" : "badge--mid"}">${e.source}</span>
         <span class="step-history-actions">
           ${e.source === "manual" ? `<button class="btn btn-secondary btn-sm edit-btn" data-id="${e.id}">Edit</button>` : ""}
-          <button class="btn btn-secondary btn-sm delete-btn" data-id="${e.id}">Delete</button>
+          ${e.source === "manual" ? `<button class="btn btn-secondary btn-sm delete-btn" data-id="${e.id}">Delete</button>` : ""}
         </span>
       </div>`,
       )
@@ -156,6 +156,10 @@ export async function renderProfile(container: HTMLElement): Promise<void> {
                   <strong>Tier:</strong> <span id="profile-tier" style="color: var(--color-text-muted);">—</span>
                 </div>
               </div>
+            </div>
+            <div id="google-health-section" style="margin-bottom: var(--space-lg); padding: var(--space-md); background: var(--color-surface); border-radius: var(--radius-md); border: 1px solid var(--color-border);">
+              <h3 style="margin-bottom: var(--space-sm); font-size: 0.95rem;">Google Health Integration</h3>
+              <div id="google-health-controls">Loading…</div>
             </div>
             <div id="profile-stats"></div>
           </div>
@@ -226,6 +230,89 @@ export async function renderProfile(container: HTMLElement): Promise<void> {
       }
     });
   }
+
+  // --- Google Health integration controls ---
+  const googleHealthControls = document.getElementById("google-health-controls")!;
+
+  async function loadGoogleHealthStatus(): Promise<void> {
+    try {
+      const status = await apiFetch<{
+        configured: boolean;
+        connected: boolean;
+        preferred_step_source: string;
+      }>("/google-health/status");
+
+      if (!status.configured) {
+        googleHealthControls.innerHTML = '<span style="color: var(--color-text-muted); font-size: 0.85rem;">Google Health integration is not available on this server.</span>';
+        return;
+      }
+
+      if (status.connected) {
+        googleHealthControls.innerHTML = `
+          <div style="display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap;">
+            <span class="badge badge--high">Connected</span>
+            <span style="color: var(--color-text-muted); font-size: 0.85rem;">Source: ${status.preferred_step_source}</span>
+          </div>
+          <div style="display: flex; gap: var(--space-sm); margin-top: var(--space-sm);">
+            <button class="btn btn-primary btn-sm" id="google-health-sync-btn">Sync Now</button>
+            <button class="btn btn-secondary btn-sm" id="google-health-disconnect-btn">Disconnect</button>
+          </div>
+          <p id="google-health-message" style="margin-top: var(--space-xs); font-size: 0.85rem; display: none;"></p>
+        `;
+
+        document.getElementById("google-health-sync-btn")!.addEventListener("click", async () => {
+          const msgEl = document.getElementById("google-health-message")!;
+          msgEl.style.display = "none";
+          try {
+            const result = await apiFetch<{ days_synced: number }>("/google-health/sync", { method: "POST" });
+            msgEl.textContent = `Synced ${result.days_synced} days of step data.`;
+            msgEl.style.color = "var(--color-success)";
+            msgEl.style.display = "block";
+            await loadHistory(historyEl);
+          } catch (err: any) {
+            msgEl.textContent = err.message || "Sync failed";
+            msgEl.style.color = "var(--color-error)";
+            msgEl.style.display = "block";
+          }
+        });
+
+        document.getElementById("google-health-disconnect-btn")!.addEventListener("click", async () => {
+          if (!confirm("Disconnect Google Health? Your synced step data will be preserved but manual entry will become your primary source.")) return;
+          try {
+            await apiFetch("/google-health/disconnect", { method: "POST" });
+            await fetchMe();
+            await loadGoogleHealthStatus();
+          } catch (err: any) {
+            const msgEl = document.getElementById("google-health-message")!;
+            msgEl.textContent = err.message || "Disconnect failed";
+            msgEl.style.color = "var(--color-error)";
+            msgEl.style.display = "block";
+          }
+        });
+      } else {
+        googleHealthControls.innerHTML = `
+          <button class="btn btn-primary btn-sm" id="google-health-connect-btn">Connect Google Health</button>
+          <p id="google-health-message" style="margin-top: var(--space-xs); font-size: 0.85rem; display: none;"></p>
+        `;
+
+        document.getElementById("google-health-connect-btn")!.addEventListener("click", async () => {
+          const msgEl = document.getElementById("google-health-message")!;
+          try {
+            const resp = await apiFetch<{ authorization_url: string }>("/google-health/connect");
+            window.location.href = resp.authorization_url;
+          } catch (err: any) {
+            msgEl.textContent = err.message || "Failed to start Google Health connection";
+            msgEl.style.color = "var(--color-error)";
+            msgEl.style.display = "block";
+          }
+        });
+      }
+    } catch {
+      googleHealthControls.innerHTML = '<span style="color: var(--color-text-muted); font-size: 0.85rem;">Could not load Google Health status.</span>';
+    }
+  }
+
+  loadGoogleHealthStatus();
 
   // --- Log steps form handler ---
   const form = document.getElementById("log-form") as HTMLFormElement;

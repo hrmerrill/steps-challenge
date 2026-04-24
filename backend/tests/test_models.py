@@ -18,7 +18,7 @@ class TestUserModel:
         assert user.display_name == "Test User"
         assert user.garmin_token is None
         assert user.strava_token is None
-        assert user.fitbit_token is None
+        assert user.google_health_token is None
 
     def test_user_email_unique(self, db_session):
         user1 = User(email="dup@example.com", password_hash="h1", display_name="User 1")
@@ -76,7 +76,7 @@ class TestDailyStepsModel:
     def test_step_source_enum(self):
         assert StepSource.GARMIN.value == "garmin"
         assert StepSource.STRAVA.value == "strava"
-        assert StepSource.FITBIT.value == "fitbit"
+        assert StepSource.GOOGLE_HEALTH.value == "google_health"
         assert StepSource.MANUAL.value == "manual"
 
     def test_relationship_to_user(self, db_session):

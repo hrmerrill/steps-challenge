@@ -140,33 +140,35 @@ One webhook endpoint (`POST /webhooks/apple-health`) that accepts JSON payload (
 
 ---
 
-## Fitbit — ✅ Direct API Available
+## Fitbit / Google Health API — ✅ Direct API Available
 
 ### API Overview
 
 - **Access:** Public API, free for individual developers.
 - **Auth:** Google OAuth 2.0 (Fitbit is now owned by Google).
 - **Daily steps:** First-class endpoint — daily step count is a native concept.
-- **Status:** Legacy Fitbit Web API is sunsetting September 2026. Migrating to **Google Health API**. Both APIs coexist during transition.
+- **Status:** Legacy Fitbit Web API sunsets September 2026. **Use the Google Health API for all new integrations.**
 - **Rate limits:** Standard Google API quotas.
 
 ### Key Considerations
 
-- Fitbit is the **easiest direct integration** — public API, OAuth 2.0, daily steps as native data.
+- The Google Health API is the **easiest direct integration** — public API, OAuth 2.0, daily steps as native data.
 - No business approval needed (unlike Garmin).
-- New integrations should target the Google Health API, not the legacy Fitbit API.
-- Google may introduce breaking changes through May 2026 during migration period.
+- **All new integrations must target the Google Health API**, not the legacy Fitbit API.
+- Credentials come from Google Cloud Console → APIs & Services → Credentials.
+- Enable "Google Health API" under APIs & Services → Library.
 
 ### Fitbit → Strava Does NOT Work for Steps
 
-Fitbit syncs only GPS-tracked exercises (runs, rides) to Strava — **not passive daily steps**. A direct Fitbit/Google Health API integration is needed for full step coverage.
+Fitbit syncs only GPS-tracked exercises (runs, rides) to Strava — **not passive daily steps**. A direct Google Health API integration is needed for full step coverage.
 
 ### Integration Path
 
 1. Register app in Google Cloud Console → enable Google Health API.
-2. OAuth 2.0 flow: user authorizes → access + refresh tokens.
-3. Pull daily step summary endpoint.
-4. Store as `DailySteps` with `source=FITBIT`.
+2. Create OAuth 2.0 client ID (Web application) under Credentials.
+3. OAuth 2.0 flow: user authorizes → access + refresh tokens.
+4. Pull daily step summary via dataset aggregate endpoint.
+5. Store as `DailySteps` with `source=GOOGLE_HEALTH`.
 
 ### Effort Estimate
 
@@ -192,7 +194,7 @@ Options:
 - `manual` (default) — use manually entered steps
 - `strava` — use Strava-synced steps
 - `apple_health` — use Apple Health steps (via Shortcut/webhook)
-- `fitbit` — use Fitbit-synced steps
+- `google_health` — use Google Health API-synced steps (Fitbit/Pixel Watch devices)
 
 ### 3. Webhook Receiver
 
@@ -201,7 +203,7 @@ Generic webhook endpoint that accepts step data from Apple Shortcuts, Health Aut
 ### 4. OAuth Integrations
 
 - **Strava:** Standard OAuth 2.0 flow — connect, callback, disconnect, token refresh.
-- **Fitbit/Google Health API:** Standard OAuth 2.0 flow — same pattern, different endpoints.
+- **Google Health API:** Standard OAuth 2.0 flow — same pattern, different endpoints. Credentials from Google Cloud Console.
 
 ---
 
@@ -214,7 +216,7 @@ Generic webhook endpoint that accepts step data from Apple Shortcuts, Health Aut
 | 3 | Strava OAuth 2.0 flow + step sync | ✅ mock OAuth + API |
 | 4 | Frontend: provider connection UI, source preference picker | ✅ Vitest |
 | 5 | Pre-built Apple Shortcut + setup instructions | ✅ manual test |
-| 6 | Fitbit/Google Health API integration (if needed) | ✅ mock OAuth + API |
+| 6 | Google Health API integration | ✅ mock OAuth + API |
 
 ---
 

@@ -13,13 +13,13 @@ class StepSource(str, enum.Enum):
     MANUAL = "manual"
     GARMIN = "garmin"
     STRAVA = "strava"
-    FITBIT = "fitbit"
+    GOOGLE_HEALTH = "google_health"
 
 
 class DailySteps(Base):
     __tablename__ = "daily_steps"
     __table_args__ = (
-        UniqueConstraint("user_id", "date", name="uq_user_date"),
+        UniqueConstraint("user_id", "date", "source", name="uq_user_date_source"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)

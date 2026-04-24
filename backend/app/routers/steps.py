@@ -11,22 +11,26 @@ from app.models.steps import DailySteps, StepSource
 from app.models.user import User
 from app.schemas.steps import StepEntry, StepResponse, StepSummary
 from app.services.auth import get_current_user
+from app.services.steps_query import effective_steps_filter
 
 router = APIRouter(prefix="/steps", tags=["steps"])
 
 
 @router.post("/", response_model=StepResponse, status_code=status.HTTP_201_CREATED)
 def log_steps(body: StepEntry, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Log steps for a specific date. Updates existing entry if one exists for that date."""
+    """Log steps for a specific date. Updates existing entry if one exists for that date and source."""
     existing = (
         db.query(DailySteps)
-        .filter(DailySteps.user_id == user.id, DailySteps.date == body.date)
+        .filter(
+            DailySteps.user_id == user.id,
+            DailySteps.date == body.date,
+            DailySteps.source == body.source,
+        )
         .first()
     )
 
     if existing:
         existing.step_count = body.step_count
-        existing.source = body.source
         db.commit()
         db.refresh(existing)
         return existing
@@ -78,6 +82,7 @@ def get_summary(
         func.count(DailySteps.id),
     ).filter(
         DailySteps.user_id == user.id,
+        effective_steps_filter(),
         *([DailySteps.date >= start_date] if start_date else []),
         *([DailySteps.date <= end_date] if end_date else []),
     ).first()
@@ -96,9 +101,11 @@ def get_summary(
 
 @router.delete("/{step_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_steps(step_id: int = Path(gt=0), user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    """Delete a step entry (only own entries)."""
+    """Delete a step entry (only own manual entries)."""
     entry = db.query(DailySteps).filter(DailySteps.id == step_id, DailySteps.user_id == user.id).first()
     if not entry:
         raise HTTPException(status_code=404, detail="Step entry not found")
+    if entry.source != StepSource.MANUAL:
+        raise HTTPException(status_code=403, detail="Cannot delete synced entries — disconnect the provider instead")
     db.delete(entry)
     db.commit()

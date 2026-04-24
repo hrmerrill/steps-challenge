@@ -13,6 +13,7 @@ from app.routers import auth as auth_router
 from app.routers import steps as steps_router
 from app.routers import challenges as challenges_router
 from app.routers import leaderboard as leaderboard_router
+from app.routers import google_health as google_health_router
 from app.routers.auth import limiter
 
 app = FastAPI(
@@ -39,6 +40,7 @@ app.include_router(auth_router.router)
 app.include_router(steps_router.router)
 app.include_router(challenges_router.router)
 app.include_router(leaderboard_router.router)
+app.include_router(google_health_router.router)
 
 # Serve uploaded files (profile photos, etc.)
 os.makedirs(settings.upload_dir, exist_ok=True)
