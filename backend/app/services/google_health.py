@@ -210,6 +210,8 @@ async def fetch_daily_steps(
                 if page_token:
                     body["pageToken"] = page_token
 
+                logger.debug("Google Health API request: POST %s body=%s", url, body)
+
                 response = await client.post(
                     url,
                     headers={
@@ -247,10 +249,11 @@ async def fetch_daily_steps(
 
         except httpx.HTTPStatusError as e:
             code = e.response.status_code
+            error_body = e.response.text
+            logger.error("Google Health API error: %s %s", code, error_body)
             if code == 401:
                 return SyncResult(error="Token expired — needs refresh", status_code=401)
             if code == 403:
-                logger.error("Google Health API 403 Forbidden: %s", e.response.text)
                 return SyncResult(
                     error=(
                         "Google Health API error: 403 Forbidden. "
@@ -259,8 +262,10 @@ async def fetch_daily_steps(
                     ),
                     status_code=403,
                 )
-            logger.error("Google Health API error: %s %s", code, e.response.text)
-            return SyncResult(error=f"Google Health API error: {code}", status_code=code)
+            return SyncResult(
+                error=f"Google Health API error: {code} — {error_body[:500]}",
+                status_code=code,
+            )
         except Exception as e:
             logger.error("Google Health API fetch error: %s", e)
             return SyncResult(error=f"Google Health API fetch error: {e}")
