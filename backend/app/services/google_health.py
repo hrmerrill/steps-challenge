@@ -167,6 +167,8 @@ async def fetch_daily_steps(
     # end_date is exclusive, so add one day to include the final date.
     exclusive_end = end_date + datetime.timedelta(days=1)
 
+    tz = settings.default_timezone
+
     request_body: dict = {
         "range": {
             "start": {
@@ -176,6 +178,7 @@ async def fetch_daily_steps(
                 "hour": 0,
                 "minute": 0,
                 "second": 0,
+                "timeZone": tz,
             },
             "end": {
                 "year": exclusive_end.year,
@@ -184,6 +187,7 @@ async def fetch_daily_steps(
                 "hour": 0,
                 "minute": 0,
                 "second": 0,
+                "timeZone": tz,
             },
         },
         "windowSizeDays": 1,

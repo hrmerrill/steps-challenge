@@ -95,6 +95,11 @@ class TestFetchDailyStepsResponseParsing:
         assert "health.googleapis.com" in call_args.args[0]
         assert "dailyRollUp" in call_args.args[0]
 
+        # Verify timeZone is included in CivilDateTime objects
+        request_body = call_args.kwargs["json"]
+        assert "timeZone" in request_body["range"]["start"]
+        assert "timeZone" in request_body["range"]["end"]
+
     @pytest.mark.asyncio
     async def test_skips_zero_step_days(self):
         """Days with zero steps are excluded from results."""
