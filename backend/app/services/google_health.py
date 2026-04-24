@@ -166,12 +166,38 @@ async def fetch_daily_steps(
     # end_date is exclusive, so add one day to include the final date.
     exclusive_end = end_date + datetime.timedelta(days=1)
 
+    # The dailyRollUp endpoint uses civil time with nested date/time objects.
+    # See: https://developers.google.com/health/endpoints
     request_body: dict = {
         "range": {
-            "startTime": f"{start_date.isoformat()}T00:00:00Z",
-            "endTime": f"{exclusive_end.isoformat()}T00:00:00Z",
+            "start": {
+                "date": {
+                    "year": start_date.year,
+                    "month": start_date.month,
+                    "day": start_date.day,
+                },
+                "time": {
+                    "hours": 0,
+                    "minutes": 0,
+                    "seconds": 0,
+                    "nanos": 0,
+                },
+            },
+            "end": {
+                "date": {
+                    "year": exclusive_end.year,
+                    "month": exclusive_end.month,
+                    "day": exclusive_end.day,
+                },
+                "time": {
+                    "hours": 0,
+                    "minutes": 0,
+                    "seconds": 0,
+                    "nanos": 0,
+                },
+            },
         },
-        "windowSize": "86400s",
+        "windowSizeDays": 1,
     }
 
     async with httpx.AsyncClient() as client:
@@ -197,9 +223,10 @@ async def fetch_daily_steps(
 
                 for point in data.get("rollupDataPoints", []):
                     civil_start = point.get("civilStartTime", {})
-                    year = civil_start.get("year")
-                    month = civil_start.get("month")
-                    day = civil_start.get("day")
+                    date_obj = civil_start.get("date", {})
+                    year = date_obj.get("year")
+                    month = date_obj.get("month")
+                    day = date_obj.get("day")
                     if not (year and month and day):
                         continue
 

@@ -59,13 +59,13 @@ class TestFetchDailyStepsResponseParsing:
             json={
                 "rollupDataPoints": [
                     {
-                        "civilStartTime": {"year": 2026, "month": 4, "day": 10, "hours": 0, "minutes": 0, "seconds": 0},
-                        "civilEndTime": {"year": 2026, "month": 4, "day": 11, "hours": 0, "minutes": 0, "seconds": 0},
+                        "civilStartTime": {"date": {"year": 2026, "month": 4, "day": 10}, "time": {}},
+                        "civilEndTime": {"date": {"year": 2026, "month": 4, "day": 10}, "time": {"hours": 23, "minutes": 59, "seconds": 59}},
                         "steps": {"countSum": "8500"},
                     },
                     {
-                        "civilStartTime": {"year": 2026, "month": 4, "day": 11, "hours": 0, "minutes": 0, "seconds": 0},
-                        "civilEndTime": {"year": 2026, "month": 4, "day": 12, "hours": 0, "minutes": 0, "seconds": 0},
+                        "civilStartTime": {"date": {"year": 2026, "month": 4, "day": 11}, "time": {}},
+                        "civilEndTime": {"date": {"year": 2026, "month": 4, "day": 11}, "time": {"hours": 23, "minutes": 59, "seconds": 59}},
                         "steps": {"countSum": "12000"},
                     },
                 ]
@@ -95,11 +95,12 @@ class TestFetchDailyStepsResponseParsing:
         assert "health.googleapis.com" in call_args.args[0]
         assert "dailyRollUp" in call_args.args[0]
 
-        # Verify ISO 8601 date range format
+        # Verify nested date/time civil time format
         request_body = call_args.kwargs["json"]
-        assert request_body["range"]["startTime"] == "2026-04-10T00:00:00Z"
-        assert request_body["range"]["endTime"] == "2026-04-13T00:00:00Z"  # exclusive end
-        assert request_body["windowSize"] == "86400s"
+        start = request_body["range"]["start"]
+        assert start["date"] == {"year": 2026, "month": 4, "day": 10}
+        assert "time" in start
+        assert request_body["windowSizeDays"] == 1
 
     @pytest.mark.asyncio
     async def test_skips_zero_step_days(self):
@@ -111,13 +112,13 @@ class TestFetchDailyStepsResponseParsing:
             json={
                 "rollupDataPoints": [
                     {
-                        "civilStartTime": {"year": 2026, "month": 4, "day": 10},
-                        "civilEndTime": {"year": 2026, "month": 4, "day": 11},
+                        "civilStartTime": {"date": {"year": 2026, "month": 4, "day": 10}, "time": {}},
+                        "civilEndTime": {"date": {"year": 2026, "month": 4, "day": 10}, "time": {"hours": 23, "minutes": 59, "seconds": 59}},
                         "steps": {"countSum": "0"},
                     },
                     {
-                        "civilStartTime": {"year": 2026, "month": 4, "day": 11},
-                        "civilEndTime": {"year": 2026, "month": 4, "day": 12},
+                        "civilStartTime": {"date": {"year": 2026, "month": 4, "day": 11}, "time": {}},
+                        "civilEndTime": {"date": {"year": 2026, "month": 4, "day": 11}, "time": {"hours": 23, "minutes": 59, "seconds": 59}},
                         "steps": {"countSum": "5000"},
                     },
                 ]
