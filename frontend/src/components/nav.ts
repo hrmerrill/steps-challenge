@@ -25,6 +25,7 @@ export function renderNav(container: HTMLElement): void {
           <li><a href="#/register" class="btn btn-primary">Sign Up</a></li>
         `}
         <li><button class="theme-toggle" id="theme-toggle-btn" title="Toggle dark/light mode">Dark</button></li>
+        <li><a href="/privacy.html" class="nav-privacy" target="_blank">Privacy</a></li>
       </ul>
     </nav>
   `;
