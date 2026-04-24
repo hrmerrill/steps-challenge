@@ -163,34 +163,15 @@ async def fetch_daily_steps(
 
     url = f"{GOOGLE_HEALTH_API_BASE}/users/me/dataTypes/steps/dataPoints:dailyRollUp"
 
-    # The API uses CivilDateTime objects with an IANA time zone.
     # end_date is exclusive, so add one day to include the final date.
     exclusive_end = end_date + datetime.timedelta(days=1)
 
-    tz = settings.default_timezone
-
     request_body: dict = {
         "range": {
-            "start": {
-                "year": start_date.year,
-                "month": start_date.month,
-                "day": start_date.day,
-                "hours": 0,
-                "minutes": 0,
-                "seconds": 0,
-                "timeZone": tz,
-            },
-            "end": {
-                "year": exclusive_end.year,
-                "month": exclusive_end.month,
-                "day": exclusive_end.day,
-                "hours": 0,
-                "minutes": 0,
-                "seconds": 0,
-                "timeZone": tz,
-            },
+            "startTime": f"{start_date.isoformat()}T00:00:00Z",
+            "endTime": f"{exclusive_end.isoformat()}T00:00:00Z",
         },
-        "windowSizeDays": 1,
+        "windowSize": "86400s",
     }
 
     async with httpx.AsyncClient() as client:

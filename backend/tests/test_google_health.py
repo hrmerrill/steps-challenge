@@ -90,23 +90,16 @@ class TestFetchDailyStepsResponseParsing:
         assert result.steps[0] == {"date": "2026-04-10", "step_count": 8500}
         assert result.steps[1] == {"date": "2026-04-11", "step_count": 12000}
 
-        # Verify the request was made to the correct URL
+        # Verify the request was made to the correct URL with correct body format
         call_args = mock_client.post.call_args
         assert "health.googleapis.com" in call_args.args[0]
         assert "dailyRollUp" in call_args.args[0]
 
-        # Verify timeZone is included in CivilDateTime objects
+        # Verify ISO 8601 date range format
         request_body = call_args.kwargs["json"]
-        assert "timeZone" in request_body["range"]["start"]
-        assert "timeZone" in request_body["range"]["end"]
-
-        # Verify correct CivilDateTime field names (plural: hours, minutes, seconds)
-        for endpoint in ("start", "end"):
-            dt = request_body["range"][endpoint]
-            assert "hours" in dt, f"Expected 'hours' (plural) in {endpoint}, got {list(dt.keys())}"
-            assert "minutes" in dt
-            assert "seconds" in dt
-            assert "hour" not in dt, "Should use 'hours' (plural), not 'hour'"
+        assert request_body["range"]["startTime"] == "2026-04-10T00:00:00Z"
+        assert request_body["range"]["endTime"] == "2026-04-13T00:00:00Z"  # exclusive end
+        assert request_body["windowSize"] == "86400s"
 
     @pytest.mark.asyncio
     async def test_skips_zero_step_days(self):

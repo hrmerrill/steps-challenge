@@ -56,9 +56,6 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = ""
 
-    # Default IANA time zone for Google Health API date ranges (e.g. "America/New_York")
-    default_timezone: str = "America/New_York"
-
     model_config = {"env_file": str(_ENV_FILE), "env_file_encoding": "utf-8"}
 
     @field_validator("jwt_secret")
@@ -104,7 +101,6 @@ def _build_settings() -> "Settings":
             google_client_id="",
             google_client_secret="",
             google_redirect_uri="",
-            default_timezone="America/New_York",
         )
 
 
