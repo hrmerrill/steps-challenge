@@ -35,8 +35,13 @@ def is_google_health_configured() -> bool:
     )
 
 
-def get_authorization_url() -> str:
-    """Build the Google OAuth 2.0 authorization URL for user consent."""
+def get_authorization_url(state: str) -> str:
+    """Build the Google OAuth 2.0 authorization URL for user consent.
+
+    *state* is an opaque token (typically a JWT) passed through the OAuth flow
+    so the callback can identify the user without requiring an ``Authorization``
+    header on the redirect.
+    """
     if not is_google_health_configured():
         raise ValueError("Google Health API OAuth is not configured")
 
@@ -47,6 +52,7 @@ def get_authorization_url() -> str:
         "scope": GOOGLE_HEALTH_SCOPES,
         "access_type": "offline",
         "prompt": "consent",
+        "state": state,
     }
     query = "&".join(f"{k}={httpx.URL('', params={k: v}).params[k]}" for k, v in params.items())
     return f"{GOOGLE_AUTH_URL}?{query}"

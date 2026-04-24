@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.steps import DailySteps, StepSource
 from app.models.user import User
-from app.services.auth import get_current_user
+from app.services.auth import create_access_token, decode_token, get_current_user
 from app.services.google_health import (
     exchange_code_for_tokens,
     fetch_daily_steps,
@@ -34,18 +34,31 @@ def connect_google_health(user: User = Depends(get_current_user)):
     if user.google_health_token:
         raise HTTPException(status_code=409, detail="Google Health is already connected")
 
-    return {"authorization_url": get_authorization_url()}
+    # Embed a JWT in the OAuth state so the callback can identify the user
+    # without needing an Authorization header on the browser redirect.
+    state_token = create_access_token(user.id)
+    return {"authorization_url": get_authorization_url(state=state_token)}
 
 
 @router.get("/callback")
 async def google_health_callback(
     code: str = Query(..., description="OAuth authorization code from Google"),
-    user: User = Depends(get_current_user),
+    state: str = Query(..., description="OAuth state containing the user JWT"),
     db: Session = Depends(get_db),
 ):
-    """Handle the OAuth callback — exchange code for tokens and store them."""
+    """Handle the OAuth callback — exchange code for tokens and store them.
+
+    The user is identified via the JWT embedded in the ``state`` parameter
+    (set during ``/connect``), since the browser redirect from Google does
+    not carry an ``Authorization`` header.
+    """
     if not is_google_health_configured():
         raise HTTPException(status_code=501, detail="Google Health integration is not configured")
+
+    user_id = decode_token(state)
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
 
     result = await exchange_code_for_tokens(code)
     if not result.success:

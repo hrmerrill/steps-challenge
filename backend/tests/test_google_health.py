@@ -208,14 +208,18 @@ class TestGoogleHealthRouter:
         assert resp.status_code == 501
 
     @patch("app.routers.google_health.is_google_health_configured", return_value=True)
-    @patch("app.routers.google_health.get_authorization_url", return_value="https://accounts.google.com/o/oauth2/v2/auth?client_id=test")
+    @patch("app.routers.google_health.get_authorization_url", return_value="https://accounts.google.com/o/oauth2/v2/auth?client_id=test&state=jwt123")
     def test_connect_returns_auth_url(self, mock_url, mock_configured, client, db_session):
-        """When configured, returns the OAuth authorization URL."""
+        """When configured, returns the OAuth authorization URL with state."""
         user, token = _create_user(db_session)
         resp = client.get("/google-health/connect", headers=_auth_header(token))
         assert resp.status_code == 200
         assert "authorization_url" in resp.json()
         assert "accounts.google.com" in resp.json()["authorization_url"]
+        # Verify get_authorization_url was called with a state token
+        mock_url.assert_called_once()
+        call_kwargs = mock_url.call_args
+        assert call_kwargs.kwargs.get("state") or call_kwargs.args
 
     @patch("app.routers.google_health.is_google_health_configured", return_value=True)
     def test_connect_already_connected(self, mock_configured, client, db_session):
@@ -235,7 +239,7 @@ class TestGoogleHealthRouter:
         mock_exchange.return_value = TokenResult(access_token="access123", refresh_token="refresh456")
 
         user, token = _create_user(db_session)
-        resp = client.get("/google-health/callback?code=authcode123", headers=_auth_header(token))
+        resp = client.get(f"/google-health/callback?code=authcode123&state={token}")
         assert resp.status_code == 200
         assert resp.json()["connected"] is True
 
