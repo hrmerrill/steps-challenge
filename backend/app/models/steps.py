@@ -26,7 +26,10 @@ class DailySteps(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     date: Mapped[datetime.date] = mapped_column(Date, nullable=False, index=True)
     step_count: Mapped[int] = mapped_column(Integer, nullable=False)
-    source: Mapped[StepSource] = mapped_column(Enum(StepSource), default=StepSource.MANUAL)
+    source: Mapped[StepSource] = mapped_column(
+        Enum(StepSource, values_callable=lambda e: [x.value for x in e]),
+        default=StepSource.MANUAL,
+    )
 
     user: Mapped["User"] = relationship(back_populates="daily_steps")  # noqa: F821
 

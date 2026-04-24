@@ -22,7 +22,8 @@ class User(Base):
 
     # Which step source to use for leaderboard/stats (avoids double-counting)
     preferred_step_source: Mapped[StepSource] = mapped_column(
-        Enum(StepSource), default=StepSource.MANUAL, server_default="manual",
+        Enum(StepSource, values_callable=lambda e: [x.value for x in e]),
+        default=StepSource.MANUAL, server_default="manual",
     )
 
     # Fitness provider OAuth tokens (null = not connected)
