@@ -106,7 +106,10 @@ async def sync_google_health_steps(
             )
 
     if not result.success:
-        raise HTTPException(status_code=502, detail=result.error)
+        raise HTTPException(
+            status_code=result.status_code or 502,
+            detail=result.error,
+        )
 
     # Upsert each day's steps
     synced_count = 0

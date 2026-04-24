@@ -361,6 +361,42 @@ class TestGoogleHealthRouter:
         assert sources[StepSource.GOOGLE_HEALTH] == 9500
 
 
+    @patch("app.routers.google_health.fetch_daily_steps")
+    def test_sync_propagates_403(self, mock_fetch, client, db_session):
+        """When Google returns 403, the sync endpoint returns 403 (not 502)."""
+        from app.services.google_health import SyncResult
+        mock_fetch.return_value = SyncResult(
+            error="Google Health API error: 403 Forbidden. "
+                  "Ensure the Fitness API is enabled in your Google Cloud Console "
+                  "and the required scopes were granted during authorization.",
+            status_code=403,
+        )
+
+        user, token = _create_user(db_session, email="err403@test.com")
+        user.google_health_token = "access123"
+        db_session.commit()
+
+        resp = client.post("/google-health/sync?days=7", headers=_auth_header(token))
+        assert resp.status_code == 403
+        assert "Fitness API" in resp.json()["detail"]
+
+    @patch("app.routers.google_health.fetch_daily_steps")
+    def test_sync_generic_upstream_error_preserves_status(self, mock_fetch, client, db_session):
+        """Non-403/401 upstream errors propagate the original status code."""
+        from app.services.google_health import SyncResult
+        mock_fetch.return_value = SyncResult(
+            error="Google Health API error: 429",
+            status_code=429,
+        )
+
+        user, token = _create_user(db_session, email="err429@test.com")
+        user.google_health_token = "access123"
+        db_session.commit()
+
+        resp = client.post("/google-health/sync?days=7", headers=_auth_header(token))
+        assert resp.status_code == 429
+
+
 # ── Preferred step source in user response tests ──
 
 

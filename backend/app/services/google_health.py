@@ -75,6 +75,7 @@ class SyncResult:
     """Result of a Google Health step sync operation."""
     steps: list[dict] = field(default_factory=list)
     error: str | None = None
+    status_code: int | None = None
     success: bool = True
 
     def __post_init__(self):
@@ -201,10 +202,21 @@ async def fetch_daily_steps(
             return SyncResult(steps=steps)
 
         except httpx.HTTPStatusError as e:
-            if e.response.status_code == 401:
-                return SyncResult(error="Token expired — needs refresh")
-            logger.error("Google Health API error: %s %s", e.response.status_code, e.response.text)
-            return SyncResult(error=f"Google Health API error: {e.response.status_code}")
+            code = e.response.status_code
+            if code == 401:
+                return SyncResult(error="Token expired — needs refresh", status_code=401)
+            if code == 403:
+                logger.error("Google Health API 403 Forbidden: %s", e.response.text)
+                return SyncResult(
+                    error=(
+                        "Google Health API error: 403 Forbidden. "
+                        "Ensure the Fitness API is enabled in your Google Cloud Console "
+                        "and the required scopes were granted during authorization."
+                    ),
+                    status_code=403,
+                )
+            logger.error("Google Health API error: %s %s", code, e.response.text)
+            return SyncResult(error=f"Google Health API error: {code}", status_code=code)
         except Exception as e:
             logger.error("Google Health API fetch error: %s", e)
             return SyncResult(error=f"Google Health API fetch error: {e}")
