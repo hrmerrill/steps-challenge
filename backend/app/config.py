@@ -51,6 +51,11 @@ class Settings(BaseSettings):
     # Frontend URL — used for OAuth redirects back to the SPA
     frontend_url: str = "http://localhost:5173"
 
+    # Mailgun email sending (required for password reset emails)
+    mailgun_api_key: str = ""
+    mailgun_domain: str = "givingfol.io"
+    mail_from_address: str = "Steps Challenge <noreply@givingfol.io>"
+
     # Google Health API OAuth (optional — leave empty to disable Google Health features)
     google_client_id: str = ""
     google_client_secret: str = ""
@@ -98,6 +103,9 @@ def _build_settings() -> "Settings":
             app_name="Steps Challenge",
             debug=False,
             frontend_url="http://localhost:5173",
+            mailgun_api_key="",
+            mailgun_domain="givingfol.io",
+            mail_from_address="Steps Challenge <noreply@givingfol.io>",
             google_client_id="",
             google_client_secret="",
             google_redirect_uri="",

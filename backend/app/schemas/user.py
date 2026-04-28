@@ -51,3 +51,37 @@ class UserResponse(BaseModel):
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Schema for requesting a password reset email."""
+
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    """Schema for resetting a password with a valid token."""
+
+    token: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def _password_complexity(cls, v: str) -> str:
+        """Require at least one uppercase, one lowercase, one digit, and one symbol."""
+        checks = [
+            (r"[A-Z]", "one uppercase letter"),
+            (r"[a-z]", "one lowercase letter"),
+            (r"\d", "one digit"),
+            (r"[^A-Za-z0-9]", "one special character"),
+        ]
+        missing = [msg for pattern, msg in checks if not re.search(pattern, v)]
+        if missing:
+            raise ValueError(f"Password must contain at least {', '.join(missing)}")
+        return v
+
+
+class MessageResponse(BaseModel):
+    """Generic response with a message."""
+
+    message: str

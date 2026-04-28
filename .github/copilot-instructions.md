@@ -22,7 +22,7 @@ backend/          Python API server
     main.py       FastAPI app + CORS + health check
     config.py     Pydantic settings (env vars)
     database.py   SQLAlchemy engine + session + Base
-    models/       ORM models (User, DailySteps, Challenge, ChallengeParticipant)
+    models/       ORM models (User, DailySteps, Challenge, ChallengeParticipant, PasswordResetToken)
     routers/      API route modules (auth, steps, leaderboard, challenges)
     services/     Business logic (sync, miles_clubs, trail)
     schemas/      Pydantic request/response schemas
@@ -111,6 +111,9 @@ cd frontend && npm test
 | `MILES_CLUB_HIGH` | High tier threshold (avg steps/day) | `10000` |
 | `MILES_CLUB_MID` | Mid tier threshold (avg steps/day) | `5000` |
 | `STEPS_PER_MILE` | Steps-to-miles conversion | `2000` |
+| `MAILGUN_API_KEY` | Mailgun API key for sending password reset emails | *(empty — emails logged to console)* |
+| `MAILGUN_DOMAIN` | Mailgun sending domain | `givingfol.io` |
+| `MAIL_FROM_ADDRESS` | Sender address for outbound emails | `Steps Challenge <noreply@givingfol.io>` |
 
 ## Common Tasks
 

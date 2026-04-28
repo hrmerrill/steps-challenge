@@ -1,4 +1,4 @@
-"""Auth router — registration, login, current-user endpoint, and profile photo upload."""
+"""Auth router — registration, login, current-user endpoint, profile photo upload, and password reset."""
 
 import os
 import uuid
@@ -12,8 +12,25 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
-from app.services.auth import hash_password, verify_password, create_access_token, get_current_user
+from app.schemas.user import (
+    ForgotPasswordRequest,
+    MessageResponse,
+    ResetPasswordRequest,
+    TokenResponse,
+    UserCreate,
+    UserLogin,
+    UserResponse,
+)
+from app.services.auth import (
+    create_access_token,
+    create_password_reset_token,
+    get_current_user,
+    hash_password,
+    reset_password,
+    validate_reset_token,
+    verify_password,
+)
+from app.services.email import send_password_reset_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 limiter = Limiter(key_func=get_remote_address)
@@ -154,3 +171,39 @@ def _user_response(user: User) -> UserResponse:
         strava_connected=user.strava_token is not None,
         google_health_connected=user.google_health_token is not None,
     )
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+@limiter.limit("5/minute")
+async def forgot_password(body: ForgotPasswordRequest, request: Request, db: Session = Depends(get_db)):
+    """Request a password reset email.
+
+    Always returns a success message to prevent email enumeration.
+    """
+    _message = "If an account exists with that email, you will receive a password reset link."
+
+    user = db.query(User).filter(User.email == body.email).first()
+    if not user:
+        return MessageResponse(message=_message)
+
+    token = create_password_reset_token(db, user.id)
+    await send_password_reset_email(body.email, token)
+
+    return MessageResponse(message=_message)
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+@limiter.limit("5/minute")
+def do_reset_password(body: ResetPasswordRequest, request: Request, db: Session = Depends(get_db)):
+    """Reset a user's password using a valid reset token."""
+    token_record = validate_reset_token(db, body.token)
+    if not token_record:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Reset token is invalid or has expired",
+        )
+
+    new_hash = hash_password(body.new_password)
+    reset_password(db, token_record, new_hash)
+
+    return MessageResponse(message="Password reset successfully")

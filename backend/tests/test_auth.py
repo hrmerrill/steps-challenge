@@ -1,6 +1,7 @@
-"""Tests for auth endpoints — register, login, /me."""
+"""Tests for auth endpoints — register, login, /me, password reset."""
 
 import pytest
+from datetime import datetime, timedelta, timezone
 
 
 class TestRegister:
@@ -143,3 +144,142 @@ class TestTokenExpiry:
         )
         resp = client.get("/auth/me", headers={"Authorization": f"Bearer {expired_token}"})
         assert resp.status_code == 401
+
+
+class TestForgotPassword:
+    def _register(self, client):
+        client.post("/auth/register", json={
+            "email": "reset@example.com",
+            "password": "Secure@pass1",
+            "display_name": "Reset User",
+        })
+
+    def test_forgot_password_existing_email(self, client):
+        self._register(client)
+        resp = client.post("/auth/forgot-password", json={"email": "reset@example.com"})
+        assert resp.status_code == 200
+        assert "password reset link" in resp.json()["message"].lower()
+
+    def test_forgot_password_nonexistent_email(self, client):
+        """Should return 200 even for unknown emails (enumeration protection)."""
+        resp = client.post("/auth/forgot-password", json={"email": "unknown@example.com"})
+        assert resp.status_code == 200
+        assert "password reset link" in resp.json()["message"].lower()
+
+    def test_forgot_password_missing_email(self, client):
+        resp = client.post("/auth/forgot-password", json={})
+        assert resp.status_code == 422
+
+    def test_forgot_password_invalid_email(self, client):
+        resp = client.post("/auth/forgot-password", json={"email": "not-an-email"})
+        assert resp.status_code == 422
+
+
+class TestResetPassword:
+    def _register_and_get_token(self, client, db_session):
+        """Register a user and create a reset token directly."""
+        client.post("/auth/register", json={
+            "email": "resetpw@example.com",
+            "password": "Secure@pass1",
+            "display_name": "Reset PW User",
+        })
+        from app.models.user import User
+        from app.services.auth import create_password_reset_token
+
+        user = db_session.query(User).filter(User.email == "resetpw@example.com").first()
+        token = create_password_reset_token(db_session, user.id)
+        return token
+
+    def test_reset_password_success(self, client, db_session):
+        token = self._register_and_get_token(client, db_session)
+        resp = client.post("/auth/reset-password", json={
+            "token": token,
+            "new_password": "NewSecure@pass2",
+        })
+        assert resp.status_code == 200
+        assert "successfully" in resp.json()["message"].lower()
+
+        # Verify new password works
+        resp = client.post("/auth/login", json={
+            "email": "resetpw@example.com",
+            "password": "NewSecure@pass2",
+        })
+        assert resp.status_code == 200
+
+    def test_reset_password_old_password_no_longer_works(self, client, db_session):
+        token = self._register_and_get_token(client, db_session)
+        client.post("/auth/reset-password", json={
+            "token": token,
+            "new_password": "NewSecure@pass2",
+        })
+        resp = client.post("/auth/login", json={
+            "email": "resetpw@example.com",
+            "password": "Secure@pass1",
+        })
+        assert resp.status_code == 401
+
+    def test_reset_password_invalid_token(self, client):
+        resp = client.post("/auth/reset-password", json={
+            "token": "invalid-token-value",
+            "new_password": "NewSecure@pass2",
+        })
+        assert resp.status_code == 400
+        assert "invalid" in resp.json()["detail"].lower()
+
+    def test_reset_password_used_token(self, client, db_session):
+        token = self._register_and_get_token(client, db_session)
+        # Use it once
+        resp = client.post("/auth/reset-password", json={
+            "token": token,
+            "new_password": "NewSecure@pass2",
+        })
+        assert resp.status_code == 200
+
+        # Try to use it again
+        resp = client.post("/auth/reset-password", json={
+            "token": token,
+            "new_password": "AnotherSecure@pass3",
+        })
+        assert resp.status_code == 400
+
+    def test_reset_password_expired_token(self, client, db_session):
+        """A token with an already-past expiry must be rejected."""
+        client.post("/auth/register", json={
+            "email": "expired@example.com",
+            "password": "Secure@pass1",
+            "display_name": "Expired User",
+        })
+        from app.models.user import User
+        from app.models.password_reset_token import PasswordResetToken
+        import secrets
+
+        user = db_session.query(User).filter(User.email == "expired@example.com").first()
+        expired_token = PasswordResetToken(
+            user_id=user.id,
+            token=secrets.token_urlsafe(32),
+            expires_at=datetime.now(timezone.utc) - timedelta(hours=1),
+        )
+        db_session.add(expired_token)
+        db_session.commit()
+
+        resp = client.post("/auth/reset-password", json={
+            "token": expired_token.token,
+            "new_password": "NewSecure@pass2",
+        })
+        assert resp.status_code == 400
+
+    def test_reset_password_weak_password(self, client, db_session):
+        token = self._register_and_get_token(client, db_session)
+        resp = client.post("/auth/reset-password", json={
+            "token": token,
+            "new_password": "weak",
+        })
+        assert resp.status_code == 422
+
+    def test_reset_password_missing_uppercase(self, client, db_session):
+        token = self._register_and_get_token(client, db_session)
+        resp = client.post("/auth/reset-password", json={
+            "token": token,
+            "new_password": "nouppercase1!",
+        })
+        assert resp.status_code == 422
