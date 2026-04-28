@@ -32,6 +32,9 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY:-}
+      - MAILGUN_DOMAIN=${MAILGUN_DOMAIN:-givingfol.io}
+      - MAIL_FROM_ADDRESS=${MAIL_FROM_ADDRESS:-Steps Challenge <noreply@givingfol.io>}
     volumes:
       - uploads_data:/app/uploads      # persists user-uploaded profile photos
     depends_on:
