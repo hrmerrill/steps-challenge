@@ -3,3 +3,4 @@
 from app.models.user import User  # noqa: F401
 from app.models.steps import DailySteps, StepSource  # noqa: F401
 from app.models.challenge import Challenge, ChallengeParticipant, MilesClubTier  # noqa: F401
+from app.models.password_reset_token import PasswordResetToken  # noqa: F401

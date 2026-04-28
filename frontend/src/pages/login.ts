@@ -23,6 +23,9 @@ export function renderLogin(container: HTMLElement): void {
           <p id="login-error" style="color: var(--color-error); margin-top: var(--space-sm); display: none;"></p>
         </form>
         <p style="margin-top: var(--space-md); text-align: center;">
+          <a href="#/forgot-password">Forgot your password?</a>
+        </p>
+        <p style="margin-top: var(--space-sm); text-align: center;">
           Don't have an account? <a href="#/register">Sign up</a>
         </p>
       </div>

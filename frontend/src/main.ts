@@ -9,6 +9,8 @@ import { renderLanding } from "./pages/landing";
 import { renderLogin } from "./pages/login";
 import { renderRegister } from "./pages/register";
 import { renderProfile } from "./pages/profile";
+import { renderForgotPassword } from "./pages/forgot-password";
+import { renderResetPassword } from "./pages/reset-password";
 import { isAuthenticated, fetchMe, logout } from "./auth";
 import "./styles/global.css";
 import "./styles/cards.css";
@@ -55,6 +57,8 @@ async function boot(): Promise<void> {
   addRoute("/login", withNav(renderLogin));
   addRoute("/register", withNav(renderRegister));
   addRoute("/profile", withNav(renderProfile));
+  addRoute("/forgot-password", withNav(renderForgotPassword));
+  addRoute("/reset-password", withNav(renderResetPassword));
 
   initRouter(contentEl);
 }
