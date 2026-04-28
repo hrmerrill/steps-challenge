@@ -45,9 +45,10 @@ const TEST_USER = {
   email: "test@example.com",
   display_name: "Test User",
   profile_photo_url: null as string | null,
+  preferred_step_source: "manual",
   garmin_connected: false,
   strava_connected: false,
-  fitbit_connected: false,
+  google_health_connected: false,
 };
 
 describe("log-steps (in profile page)", () => {
@@ -101,7 +102,7 @@ describe("log-steps (in profile page)", () => {
     expect(deleteBtns.length).toBe(1);
   });
 
-  it("does not show edit button for non-manual entries", async () => {
+  it("does not show edit or delete buttons for non-manual entries", async () => {
     mockApiFetch.mockImplementation(async (path: string) => {
       if (path === "/steps/") {
         return [{ id: 1, user_id: 1, date: "2026-04-15", step_count: 10000, source: "garmin" }];
@@ -114,7 +115,7 @@ describe("log-steps (in profile page)", () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(container.querySelectorAll(".edit-btn").length).toBe(0);
-    expect(container.querySelectorAll(".delete-btn").length).toBe(1);
+    expect(container.querySelectorAll(".delete-btn").length).toBe(0);
   });
 
   it("populates form when edit is clicked", async () => {

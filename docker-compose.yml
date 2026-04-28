@@ -28,6 +28,10 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-steps_challenge}
       - JWT_SECRET=${JWT_SECRET:?Set JWT_SECRET in .env (use a 32+ char random string)}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI:-}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     volumes:
       - uploads_data:/app/uploads      # persists user-uploaded profile photos
     depends_on:

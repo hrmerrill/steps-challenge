@@ -9,9 +9,10 @@ export interface AuthUser {
   email: string;
   display_name: string;
   profile_photo_url: string | null;
+  preferred_step_source: string;
   garmin_connected: boolean;
   strava_connected: boolean;
-  fitbit_connected: boolean;
+  google_health_connected: boolean;
 }
 
 let currentUser: AuthUser | null = null;

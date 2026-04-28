@@ -14,6 +14,7 @@ from app.models.user import User
 from app.schemas.challenge import ChallengeCreate, ChallengeResponse, ChallengeMembership, TeamChallengeStats, UserChallengeStats
 from app.services.auth import get_current_user
 from app.services.miles_clubs import calculate_tier, get_user_tier
+from app.services.steps_query import effective_steps_filter
 from app.services.trail import steps_to_miles
 
 router = APIRouter(prefix="/challenges", tags=["challenges"])
@@ -86,6 +87,7 @@ def join_challenge(
             DailySteps.user_id == user.id,
             DailySteps.date >= prior_month_start,
             DailySteps.date <= prior_month_end,
+            effective_steps_filter(),
         )
         .scalar()
     )
@@ -159,6 +161,7 @@ def get_team_stats(
             DailySteps.user_id.in_(db.query(participants_sub.c.user_id)),
             DailySteps.date >= challenge.start_date,
             DailySteps.date <= challenge.end_date,
+            effective_steps_filter(),
         )
         .one()
     )
@@ -212,6 +215,7 @@ def get_my_stats(
             DailySteps.user_id == user.id,
             DailySteps.date >= challenge.start_date,
             DailySteps.date <= challenge.end_date,
+            effective_steps_filter(),
         )
         .one()
     )
@@ -226,7 +230,8 @@ def get_my_stats(
             DailySteps,
             (DailySteps.user_id == ChallengeParticipant.user_id)
             & (DailySteps.date >= challenge.start_date)
-            & (DailySteps.date <= challenge.end_date),
+            & (DailySteps.date <= challenge.end_date)
+            & effective_steps_filter(),
         )
         .filter(ChallengeParticipant.challenge_id == challenge_id)
         .group_by(ChallengeParticipant.user_id)

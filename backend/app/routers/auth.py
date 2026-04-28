@@ -70,15 +70,7 @@ def login(body: UserLogin, request: Request, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     """Return the currently authenticated user's profile."""
-    return UserResponse(
-        id=current_user.id,
-        email=current_user.email,
-        display_name=current_user.display_name,
-        profile_photo_url=current_user.profile_photo_url,
-        garmin_connected=current_user.garmin_token is not None,
-        strava_connected=current_user.strava_token is not None,
-        fitbit_connected=current_user.fitbit_token is not None,
-    )
+    return _user_response(current_user)
 
 
 @router.post("/profile-photo", response_model=UserResponse, status_code=status.HTTP_200_OK)
@@ -117,15 +109,7 @@ async def upload_profile_photo(
     db.commit()
     db.refresh(current_user)
 
-    return UserResponse(
-        id=current_user.id,
-        email=current_user.email,
-        display_name=current_user.display_name,
-        profile_photo_url=current_user.profile_photo_url,
-        garmin_connected=current_user.garmin_token is not None,
-        strava_connected=current_user.strava_token is not None,
-        fitbit_connected=current_user.fitbit_token is not None,
-    )
+    return _user_response(current_user)
 
 
 @router.delete("/profile-photo", status_code=status.HTTP_204_NO_CONTENT)
@@ -156,3 +140,17 @@ def _remove_old_photo(url: str | None) -> None:
         return  # path outside upload dir — refuse to delete
     if target.is_file():
         target.unlink()
+
+
+def _user_response(user: User) -> UserResponse:
+    """Build a UserResponse from a User ORM instance."""
+    return UserResponse(
+        id=user.id,
+        email=user.email,
+        display_name=user.display_name,
+        profile_photo_url=user.profile_photo_url,
+        preferred_step_source=user.preferred_step_source,
+        garmin_connected=user.garmin_token is not None,
+        strava_connected=user.strava_token is not None,
+        google_health_connected=user.google_health_token is not None,
+    )

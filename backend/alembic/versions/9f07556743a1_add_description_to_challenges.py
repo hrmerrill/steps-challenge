@@ -69,7 +69,7 @@ def upgrade() -> None:
             sa.Column('user_id', sa.Integer(), nullable=False),
             sa.Column('date', sa.Date(), nullable=False),
             sa.Column('step_count', sa.Integer(), nullable=False),
-            sa.Column('source', sa.Enum('MANUAL', 'GARMIN', 'STRAVA', 'FITBIT', name='stepsource'), nullable=False),
+            sa.Column('source', sa.Enum('manual', 'garmin', 'strava', 'google_health', name='stepsource'), nullable=False),
             sa.ForeignKeyConstraint(['user_id'], ['users.id']),
             sa.PrimaryKeyConstraint('id'),
             sa.UniqueConstraint('user_id', 'date', name='uq_user_date')

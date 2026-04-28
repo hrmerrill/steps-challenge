@@ -46,9 +46,10 @@ const TEST_USER = {
   email: "test@example.com",
   display_name: "Test User",
   profile_photo_url: null as string | null,
+  preferred_step_source: "manual",
   garmin_connected: false,
   strava_connected: false,
-  fitbit_connected: false,
+  google_health_connected: false,
 };
 
 describe("profile page", () => {

@@ -10,7 +10,6 @@ import { renderLogin } from "./pages/login";
 import { renderRegister } from "./pages/register";
 import { renderProfile } from "./pages/profile";
 import { isAuthenticated, fetchMe, logout } from "./auth";
-import { isSiteAuthed, showGate } from "./site-gate";
 import "./styles/global.css";
 import "./styles/cards.css";
 import "./styles/components.css";
@@ -23,11 +22,6 @@ async function boot(): Promise<void> {
   const saved = localStorage.getItem("theme");
   if (saved === "dark" || saved === "light") {
     document.documentElement.setAttribute("data-theme", saved);
-  }
-
-  // Site-wide password gate
-  if (!isSiteAuthed()) {
-    await showGate(appEl);
   }
 
   // Layout: nav + content

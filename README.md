@@ -15,7 +15,7 @@ A webapp for group step challenges with leaderboards, miles clubs, and a virtual
 ## Features
 
 - **Monthly step challenges** — compete with coworkers
-- **Fitness tracker sync** — Garmin, Strava, Fitbit (OAuth) or manual daily entry
+- **Fitness tracker sync** — Garmin, Strava, Google Health API (OAuth) or manual daily entry
 - **Miles Clubs** — tiers based on average daily steps from prior month (0–5k, 5k–10k, >10k steps/day)
 - **Leaderboard** — ranked by total steps, with miles club badges
 - **Virtual Trail Map** — collective progress along the Appalachian Trail (Leaflet.js)

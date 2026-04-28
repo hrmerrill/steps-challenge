@@ -39,7 +39,7 @@ async function loadHistory(historyEl: HTMLElement): Promise<void> {
         <span class="step-history-source badge ${e.source === "manual" ? "" : "badge--mid"}">${e.source}</span>
         <span class="step-history-actions">
           ${e.source === "manual" ? `<button class="btn btn-secondary btn-sm edit-btn" data-id="${e.id}">Edit</button>` : ""}
-          <button class="btn btn-secondary btn-sm delete-btn" data-id="${e.id}">Delete</button>
+          ${e.source === "manual" ? `<button class="btn btn-secondary btn-sm delete-btn" data-id="${e.id}">Delete</button>` : ""}
         </span>
       </div>`,
       )

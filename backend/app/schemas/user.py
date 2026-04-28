@@ -4,6 +4,8 @@ import re
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.models.steps import StepSource
+
 
 class UserCreate(BaseModel):
     """Schema for new user registration."""
@@ -38,9 +40,10 @@ class UserResponse(BaseModel):
     email: str
     display_name: str
     profile_photo_url: str | None = None
+    preferred_step_source: StepSource = StepSource.MANUAL
     garmin_connected: bool = False
     strava_connected: bool = False
-    fitbit_connected: bool = False
+    google_health_connected: bool = False
 
     model_config = {"from_attributes": True}
 

@@ -1,10 +1,16 @@
 """Application configuration loaded from environment variables."""
 
 import warnings
+from pathlib import Path
 from typing import Literal
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+# Resolve .env relative to the backend/ directory (parent of app/)
+# so it works regardless of the process working directory.
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
+_ENV_FILE = _BACKEND_DIR / ".env"
 
 _DEFAULT_JWT_SECRET = "CHANGE-ME-in-production"
 _MIN_JWT_SECRET_LENGTH = 32
@@ -42,7 +48,15 @@ class Settings(BaseSettings):
     max_photo_size: int = 5 * 1024 * 1024  # 5 MB
     allowed_photo_types: str = "image/jpeg,image/png,image/webp,image/gif"
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+    # Frontend URL — used for OAuth redirects back to the SPA
+    frontend_url: str = "http://localhost:5173"
+
+    # Google Health API OAuth (optional — leave empty to disable Google Health features)
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
+
+    model_config = {"env_file": str(_ENV_FILE), "env_file_encoding": "utf-8"}
 
     @field_validator("jwt_secret")
     @classmethod
@@ -83,6 +97,10 @@ def _build_settings() -> "Settings":
             allowed_photo_types="image/jpeg,image/png,image/webp,image/gif",
             app_name="Steps Challenge",
             debug=False,
+            frontend_url="http://localhost:5173",
+            google_client_id="",
+            google_client_secret="",
+            google_redirect_uri="",
         )
 
 

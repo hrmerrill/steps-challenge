@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.challenge import MilesClubTier
 from app.models.steps import DailySteps
+from app.services.steps_query import effective_steps_filter
 
 
 def calculate_tier(average_daily_steps: float) -> MilesClubTier:
@@ -57,6 +58,7 @@ def _avg_daily_from_range(
             DailySteps.user_id == user_id,
             DailySteps.date >= start,
             DailySteps.date <= end,
+            effective_steps_filter(),
         )
         .one()
     )
@@ -86,6 +88,7 @@ def _has_steps_in_range(user_id: int, db: Session, start: datetime.date, end: da
             DailySteps.user_id == user_id,
             DailySteps.date >= start,
             DailySteps.date <= end,
+            effective_steps_filter(),
         )
         .first()
     ) is not None
@@ -127,6 +130,7 @@ def _bulk_steps_in_range(
             DailySteps.user_id.in_(user_ids),
             DailySteps.date >= start,
             DailySteps.date <= end,
+            effective_steps_filter(),
         )
         .group_by(DailySteps.user_id)
         .all()

@@ -1,4 +1,4 @@
-"""Provider sync stubs — placeholder OAuth clients for Garmin, Strava, Fitbit.
+"""Provider sync stubs — placeholder OAuth clients for Garmin, Strava, Google Health.
 
 Real implementation requires developer API keys and OAuth flows.
 These stubs define the interface for future implementation.
@@ -30,9 +30,13 @@ def sync_strava(token: str) -> SyncResult:
     return SyncResult(error="Strava sync not yet implemented — enter steps manually")
 
 
-def sync_fitbit(token: str) -> SyncResult:
-    """Sync steps from Fitbit. STUB — returns empty result."""
-    # TODO: Implement Fitbit Web API integration
-    # Requires: FITBIT_CLIENT_ID, FITBIT_CLIENT_SECRET env vars
-    # Docs: https://dev.fitbit.com/build/reference/web-api/
-    return SyncResult(error="Fitbit sync not yet implemented — enter steps manually")
+def sync_google_health(token: str) -> SyncResult:
+    """Sync steps from Google Health API. STUB — returns empty result.
+
+    For the full implementation, see app/services/google_health.py which
+    handles the complete OAuth flow and step data retrieval.
+    """
+    # See app/services/google_health.py for the real implementation
+    # Requires: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET env vars
+    # Docs: https://developers.google.com/health/about
+    return SyncResult(error="Google Health sync not yet implemented via this stub — use /google-health/sync endpoint")

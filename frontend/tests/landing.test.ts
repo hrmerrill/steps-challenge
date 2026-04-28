@@ -73,9 +73,10 @@ const TEST_USER = {
   email: "test@test.com",
   display_name: "Test",
   profile_photo_url: null,
+  preferred_step_source: "manual",
   garmin_connected: false,
   strava_connected: false,
-  fitbit_connected: false,
+  google_health_connected: false,
 };
 
 describe("getChallengeStatus", () => {
